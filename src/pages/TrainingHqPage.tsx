@@ -31,7 +31,7 @@ const scenarioNotes: Record<string, string> = {
 };
 
 export function TrainingHqPage() {
-  const { incidents, activityLog, addNotification, resetAll, clearActivityLog, addLabIncident } = useSimulator();
+  const { incidents, activityLog, addNotification, resetAll, clearActivityLog, addLabIncident, responseActions } = useSimulator();
   const { session, students, scenarios, activities, publishScenario, gradeStudent, deleteStudent } = useClassroom();
   const [scenario, setScenario] = useState<keyof typeof scenarioNotes>("Phish -> Endpoint -> Lateral");
   const [section, setSection] = useState<"All" | "Section A" | "Section B" | "Section C">("All");
@@ -74,6 +74,21 @@ export function TrainingHqPage() {
     const high = incidents.filter((i) => i.host.riskScore >= 75).length;
     return { open, high, total: incidents.length };
   }, [incidents]);
+
+  const xdrScoreboard = useMemo(() => {
+    const roster = students.map((s) => {
+      const mine = responseActions.filter((r) => r.actor === s.name);
+      const blocked = mine.filter((r) => r.action === "block_sha256").length;
+      const allowed = mine.filter((r) => r.action === "allow_sha256").length;
+      const isolated = mine.filter((r) => r.action === "isolate_host").length;
+      const blockedIp = mine.filter((r) => r.action === "block_ip").length;
+      const total = mine.length;
+      const points = blocked * 3 + isolated * 3 + blockedIp * 2 + allowed;
+      const latestAt = mine[0]?.at ?? 0;
+      return { id: s.id, name: s.name, blocked, allowed, isolated, blockedIp, total, points, latestAt };
+    });
+    return roster.sort((a, b) => b.points - a.points || b.total - a.total || b.latestAt - a.latestAt);
+  }, [students, responseActions]);
 
   function launchScenario() {
     addNotification("Scenario launched", `${scenario} started. ${scenarioNotes[scenario]}`);
@@ -419,6 +434,33 @@ export function TrainingHqPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+            <div style={{ padding: 12 }}>
+              <h3 style={{ margin: "0 0 8px" }}>XDR Response Scoreboard</h3>
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead><tr><th>Rank</th><th>Student</th><th>Block SHA</th><th>Allow SHA</th><th>Isolate Host</th><th>Block IP</th><th>Total Actions</th><th>Score</th></tr></thead>
+                  <tbody>
+                    {xdrScoreboard.length === 0 ? (
+                      <tr><td colSpan={8}>No student response actions yet.</td></tr>
+                    ) : xdrScoreboard.map((r, i) => (
+                      <tr key={r.id}>
+                        <td>#{i + 1}</td>
+                        <td>{r.name}</td>
+                        <td>{r.blocked}</td>
+                        <td>{r.allowed}</td>
+                        <td>{r.isolated}</td>
+                        <td>{r.blockedIp}</td>
+                        <td>{r.total}</td>
+                        <td>{r.points}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="dash-muted" style={{ marginTop: 8 }}>
+                Score model: block SHA (3), isolate host (3), block IP (2), allow SHA (1).
+              </p>
             </div>
             <div style={{ padding: 12 }}>
               <h3 style={{ margin: "0 0 8px" }}>Student Grading</h3>
