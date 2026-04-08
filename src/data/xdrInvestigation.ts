@@ -10,6 +10,11 @@ export type InvestigationNode = {
   label: string;
   sha256: string;
   shaDisplay: string;
+  family: string;
+  confidence: number;
+  prevalence: "rare" | "uncommon" | "common";
+  recommendation: "block_sha256" | "allow_sha256" | "isolate_host" | "block_ip" | "monitor_only";
+  rationale: string;
 };
 
 const LABELS: Record<NodeSeverity, string[]> = {
@@ -47,6 +52,22 @@ const LABELS: Record<NodeSeverity, string[]> = {
     "Vendor-signed installer",
   ],
 };
+
+const FAMILIES: Record<NodeSeverity, string[]> = {
+  malicious: ["QakBot", "Remcos", "AgentTesla", "LummaStealer", "DarkGate"],
+  suspicious: ["PossiblyLoader", "ScriptDropper", "UnsignedRMM", "MacroStager"],
+  unknown: ["Unknown.Packed", "Unknown.LowPrevalence", "Unknown.DriverCandidate"],
+  common: ["KnownInstaller", "EnterpriseUpdater", "SignedUtility"],
+  clean: ["MicrosoftSigned", "VendorSigned", "WhitelistedLibrary"],
+};
+
+function recommendationFor(severity: NodeSeverity, prevalence: "rare" | "uncommon" | "common") {
+  if (severity === "malicious") return "block_sha256" as const;
+  if (severity === "suspicious") return prevalence === "rare" ? "isolate_host" as const : "block_ip" as const;
+  if (severity === "unknown") return "monitor_only" as const;
+  if (severity === "common") return "allow_sha256" as const;
+  return "allow_sha256" as const;
+}
 
 function normalizeSha(s: string): string {
   const t = s.replace(/\s/g, "").toLowerCase();
@@ -99,6 +120,20 @@ export function buildInvestigationNodes(sha256List: string[], seed: string): Inv
     const labels = LABELS[severity];
     const label = labels[i % labels.length];
     const full = diversifySha(bases, i, seed);
+    const family = FAMILIES[severity][i % FAMILIES[severity].length];
+    const prevalence = (rng() < 0.33 ? "rare" : rng() < 0.66 ? "uncommon" : "common") as "rare" | "uncommon" | "common";
+    const confidence = Math.floor(55 + rng() * 44);
+    const recommendation = recommendationFor(severity, prevalence);
+    const rationale =
+      severity === "malicious"
+        ? `Behavioral chain aligns with ${family}: staged payload + outbound C2 over TLS. Confidence ${confidence}%.`
+        : severity === "suspicious"
+          ? `Partial overlap with ${family} techniques. Validate parent process and user context before final action.`
+          : severity === "unknown"
+            ? `Low-prevalence sample with incomplete intel. Monitor execution and enrich with sandbox/VT before block.`
+            : severity === "common"
+              ? `Signed and frequently observed enterprise utility (${family}); false positive risk is high.`
+              : `Trusted baseline artifact (${family}) with stable prevalence and no malicious behavior.`;
 
     nodes.push({
       id: `node-${seed.slice(0, 8)}-${i}`,
@@ -106,6 +141,11 @@ export function buildInvestigationNodes(sha256List: string[], seed: string): Inv
       label,
       sha256: full,
       shaDisplay: `${full.slice(0, 32)}…${full.slice(-8)}`,
+      family,
+      confidence,
+      prevalence,
+      recommendation,
+      rationale,
     });
   }
   return nodes;

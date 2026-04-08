@@ -2095,3 +2095,70 @@ button.user-pill:hover {
   border-color: var(--accent);
   background: var(--bg-panel-hover);
 }
+
+.soc-chat-fab {
+  position: fixed;
+  z-index: 2600;
+  right: 24px;
+  bottom: 24px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(145deg, #7c3aed, #5b21b6);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.soc-chat-panel {
+  position: fixed;
+  z-index: 2700;
+  right: 24px;
+  bottom: 96px;
+  width: min(420px, 92vw);
+  max-height: min(70vh, 620px);
+  display: flex;
+  flex-direction: column;
+}
+
+.soc-chat-hint {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.soc-chat-body {
+  padding: 12px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 280px;
+  max-height: 360px;
+}
+
+.soc-chat-msg {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.soc-chat-msg.bot {
+  background: #0d1117;
+  border: 1px solid var(--border);
+}
+
+.soc-chat-msg.user {
+  background: rgba(0, 112, 210, 0.16);
+  border: 1px solid rgba(0, 112, 210, 0.4);
+}
+
+.soc-chat-input-row {
+  padding: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}

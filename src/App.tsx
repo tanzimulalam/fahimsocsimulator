@@ -8,6 +8,7 @@ import { NotepadFloatingButton } from "./components/NotepadFloatingButton";
 import { XdrLayout } from "./layouts/XdrLayout";
 import { DefenderFloatingButton } from "./components/defender/DefenderFloatingButton";
 import { XdrFloatingButton } from "./components/xdr/XdrFloatingButton";
+import { SocTutorChatbot } from "./components/SocTutorChatbot";
 import { AnalysisPage } from "./pages/AnalysisPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EventsPage } from "./pages/EventsPage";
@@ -153,6 +154,7 @@ export default function App() {
       <DefenderFloatingButton />
       <XdrFloatingButton />
       {role === "admin" ? <NotepadFloatingButton /> : null}
+      <SocTutorChatbot />
     </>
   );
 }

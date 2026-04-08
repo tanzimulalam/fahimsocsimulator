@@ -15,6 +15,14 @@ function verdictFor(sev: NodeSeverity): { label: string; sevClass: string } {
   return { label: "Clean", sevClass: "sev-low" };
 }
 
+function recommendationLabel(v: InvestigationNode["recommendation"]) {
+  if (v === "block_sha256") return "Block SHA256";
+  if (v === "allow_sha256") return "Allow SHA256";
+  if (v === "isolate_host") return "Isolate Host";
+  if (v === "block_ip") return "Block Related IP";
+  return "Monitor Only";
+}
+
 type Props = {
   node: InvestigationNode | null;
   incidentId: string | null;
@@ -119,6 +127,16 @@ export function InvestigationDrawer({ node, incidentId, incidentHostLine, sirLab
             </p>
           ) : null}
         </section>
+        <section className="xdr-drawer-section">
+          <h4>Decision Support</h4>
+          <p className="dash-muted" style={{ margin: "0 0 6px" }}>
+            Family: <strong>{node.family}</strong> · Confidence: <strong>{node.confidence}%</strong> · Prevalence: <strong>{node.prevalence}</strong>
+          </p>
+          <p style={{ margin: "0 0 8px", fontSize: 12 }}>{node.rationale}</p>
+          <p className="xdr-outcome-banner" style={{ margin: 0 }}>
+            Recommended action: <strong>{recommendationLabel(node.recommendation)}</strong>
+          </p>
+        </section>
 
         <details className="xdr-accordion" open>
           <summary>Secure Endpoint — Data Group</summary>
@@ -216,6 +234,9 @@ export function InvestigationDrawer({ node, incidentId, incidentHostLine, sirLab
       </div>
       <Modal open={respOpen} title={`Response Options — ${respSource}`} onClose={() => setRespOpen(false)}>
         <p>Select remediation action for this malicious indicator.</p>
+        <p className="dash-muted" style={{ marginTop: -4 }}>
+          Recommendation for this observable: <strong>{recommendationLabel(node.recommendation)}</strong>
+        </p>
         <div className="modal-actions">
           <button type="button" className="btn btn-primary" onClick={() => doResponse("block_sha")}>Block SHA256</button>
           <button type="button" className="btn" onClick={() => doResponse("allow_sha")}>Allow SHA256</button>

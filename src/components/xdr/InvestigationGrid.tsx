@@ -107,7 +107,7 @@ export function InvestigationGrid({ nodes, selectedId, onSelect, onRefresh, onQu
                   (selectedId === n.id ? " selected" : "") +
                   (idx === 17 ? " focus-demo" : "")
                 }
-                title={`${n.label} — ${n.shaDisplay} (${n.severity})`}
+                title={`${n.label} | ${n.family} | rec: ${n.recommendation} | ${n.shaDisplay} (${n.severity})`}
                 onClick={() => onSelect(n)}
                 onContextMenu={(e) => {
                   e.preventDefault();
