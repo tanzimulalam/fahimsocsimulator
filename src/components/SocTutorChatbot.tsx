@@ -32,8 +32,10 @@ function answerFor(question: string, path: string): string {
 }
 
 export function SocTutorChatbot() {
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
     { role: "bot", text: "SOC Tutor ready. Ask about AMP, XDR, Defender, phishing triage, or response actions." },
   ]);
@@ -44,11 +46,58 @@ export function SocTutorChatbot() {
     return "Context: AMP";
   }, [location.pathname]);
 
-  function send() {
+  async function askOnline(question: string): Promise<string | null> {
+    if (!apiKey) return null;
+    const context =
+      location.pathname.startsWith("/xdr")
+        ? "XDR Investigate workflow, response actions, and IOC triage."
+        : location.pathname.startsWith("/defender")
+          ? "Microsoft Defender Explorer and Investigations lifecycle."
+          : "Cisco AMP incident triage workflow.";
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.3,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a SOC training tutor for AMP, Cisco XDR, and Microsoft Defender labs. Give concise, practical analyst guidance, explain why an action is chosen, and map answers to triage workflows.",
+          },
+          {
+            role: "user",
+            content: `Page context: ${context}\nQuestion: ${question}`,
+          },
+        ],
+      }),
+    });
+    if (!resp.ok) return null;
+    const data = (await resp.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    return data.choices?.[0]?.message?.content?.trim() ?? null;
+  }
+
+  async function send() {
     const q = text.trim();
-    if (!q) return;
-    setMessages((prev) => [...prev, { role: "user", text: q }, { role: "bot", text: answerFor(q, location.pathname) }]);
+    if (!q || loading) return;
+    setMessages((prev) => [...prev, { role: "user", text: q }]);
     setText("");
+    setLoading(true);
+    try {
+      const online = await askOnline(q);
+      const out = online ?? answerFor(q, location.pathname);
+      setMessages((prev) => [...prev, { role: "bot", text: out }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: "bot", text: answerFor(q, location.pathname) }]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -66,6 +115,7 @@ export function SocTutorChatbot() {
                 {m.text}
               </div>
             ))}
+            {loading ? <div className="soc-chat-msg bot">Thinking...</div> : null}
           </div>
           <div className="soc-chat-input-row">
             <input
@@ -77,7 +127,7 @@ export function SocTutorChatbot() {
                 if (e.key === "Enter") send();
               }}
             />
-            <button type="button" className="btn btn-primary" onClick={send}>Send</button>
+            <button type="button" className="btn btn-primary" onClick={send} disabled={loading}>Send</button>
           </div>
         </div>
       ) : null}
