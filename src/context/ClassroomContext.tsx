@@ -42,6 +42,7 @@ type ClassroomState = {
   notes: Record<string, StudentNotebook>;
   seenScenarioAt: Record<string, number>;
   grades: Record<string, { score: number; comment: string; updatedAt: number }>;
+  instructorPages: { instructorNotes: string; incidentTemplate: string; updatedAt: number };
 };
 
 const STORE_KEY = "socClassroomStateV1";
@@ -52,7 +53,14 @@ function uid() {
 
 function loadState(): ClassroomState {
   const raw = localStorage.getItem(STORE_KEY);
-  if (!raw) return { students: [], scenarios: [], activities: [], notes: {}, seenScenarioAt: {}, grades: {} };
+  if (!raw) return {
+    students: [], scenarios: [], activities: [], notes: {}, seenScenarioAt: {}, grades: {},
+    instructorPages: {
+      instructorNotes: "<h3>Instructor Notes</h3><p>Use this page to share class-wide guidance and reminders.</p>",
+      incidentTemplate: "<h3>Incident Handler Template</h3><ol><li>Summary</li><li>Evidence</li><li>Triage Action</li><li>Containment</li><li>Resolution</li></ol>",
+      updatedAt: Date.now(),
+    },
+  };
   try {
     const p = JSON.parse(raw) as ClassroomState;
     const normalizedNotes: Record<string, StudentNotebook> = {};
@@ -102,9 +110,21 @@ function loadState(): ClassroomState {
       notes: normalizedNotes,
       seenScenarioAt: p.seenScenarioAt ?? {},
       grades: p.grades ?? {},
+      instructorPages: p.instructorPages ?? {
+        instructorNotes: "<h3>Instructor Notes</h3><p>Use this page to share class-wide guidance and reminders.</p>",
+        incidentTemplate: "<h3>Incident Handler Template</h3><ol><li>Summary</li><li>Evidence</li><li>Triage Action</li><li>Containment</li><li>Resolution</li></ol>",
+        updatedAt: Date.now(),
+      },
     };
   } catch {
-    return { students: [], scenarios: [], activities: [], notes: {}, seenScenarioAt: {}, grades: {} };
+    return {
+      students: [], scenarios: [], activities: [], notes: {}, seenScenarioAt: {}, grades: {},
+      instructorPages: {
+        instructorNotes: "<h3>Instructor Notes</h3><p>Use this page to share class-wide guidance and reminders.</p>",
+        incidentTemplate: "<h3>Incident Handler Template</h3><ol><li>Summary</li><li>Evidence</li><li>Triage Action</li><li>Containment</li><li>Resolution</li></ol>",
+        updatedAt: Date.now(),
+      },
+    };
   }
 }
 
@@ -116,6 +136,7 @@ type Ctx = {
   activities: StudentActivity[];
   notes: Record<string, StudentNotebook>;
   grades: Record<string, { score: number; comment: string; updatedAt: number }>;
+  instructorPages: { instructorNotes: string; incidentTemplate: string; updatedAt: number };
   registerStudent: (name: string) => StudentProfile;
   publishScenario: (data: Omit<LabScenario, "id" | "createdAt" | "createdBy">, by: string) => void;
   addStudentActivity: (action: string, details: string) => void;
@@ -125,6 +146,8 @@ type Ctx = {
   gradeStudent: (studentId: string, score: number, comment: string) => void;
   unseenScenariosForStudent: (studentId: string) => LabScenario[];
   markScenariosSeen: (studentId: string) => void;
+  updateInstructorPage: (key: "instructorNotes" | "incidentTemplate", html: string) => void;
+  deleteStudent: (studentId: string) => void;
 };
 
 const ClassroomContext = createContext<Ctx | null>(null);
@@ -171,6 +194,7 @@ export function ClassroomProvider({ children }: { children: ReactNode }) {
       activities: state.activities,
       notes: state.notes,
       grades: state.grades,
+      instructorPages: state.instructorPages,
       registerStudent: (name: string) => {
         const n = name.trim();
         const existing = state.students.find((s) => s.name.toLowerCase() === n.toLowerCase());
@@ -231,6 +255,25 @@ export function ClassroomProvider({ children }: { children: ReactNode }) {
       },
       markScenariosSeen: (studentId) => {
         setState((prev) => ({ ...prev, seenScenarioAt: { ...prev.seenScenarioAt, [studentId]: Date.now() } }));
+      },
+      updateInstructorPage: (key, html) => {
+        setState((prev) => ({
+          ...prev,
+          instructorPages: { ...prev.instructorPages, [key]: html, updatedAt: Date.now() },
+        }));
+      },
+      deleteStudent: (studentId) => {
+        setState((prev) => {
+          const students = prev.students.filter((s) => s.id !== studentId);
+          const activities = prev.activities.filter((a) => a.studentId !== studentId);
+          const notes = { ...prev.notes };
+          const grades = { ...prev.grades };
+          const seenScenarioAt = { ...prev.seenScenarioAt };
+          delete notes[studentId];
+          delete grades[studentId];
+          delete seenScenarioAt[studentId];
+          return { ...prev, students, activities, notes, grades, seenScenarioAt };
+        });
       },
     }),
     [session, state]

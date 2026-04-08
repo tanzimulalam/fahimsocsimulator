@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useClassroom } from "../context/ClassroomContext";
+import { useSimulator } from "../context/SimulatorContext";
 
 export function StudentNotesPage() {
-  const { session, notes, grades, createNotebookPage, setActiveNotebookPage, saveStudentNote, addStudentActivity } = useClassroom();
+  const { session, notes, grades, instructorPages, createNotebookPage, setActiveNotebookPage, saveStudentNote, addStudentActivity } = useClassroom();
+  const { addNotification } = useSimulator();
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [color, setColor] = useState("#111111");
   const [title, setTitle] = useState("");
+  const [viewTab, setViewTab] = useState<"my" | "instructor" | "template">("my");
   const studentId = session?.role === "student" ? session.studentId : null;
   if (!studentId) return null;
   const sid = studentId;
@@ -27,6 +30,7 @@ export function StudentNotesPage() {
     if (!activePageId) return;
     saveStudentNote(sid, activePageId, html);
     addStudentActivity("Incident note saved", "Updated student notebook");
+    addNotification("Notes", "Your incident note has been saved.");
   }
 
   function newPage() {
@@ -40,6 +44,12 @@ export function StudentNotesPage() {
     <div className="page-scroll">
       <h1 className="page-title">My Incident Handler Notes</h1>
       <p className="dash-muted">OneNote-style notebook with daily pages. Instructor can review and grade your notes.</p>
+      <div className="def-tabs" style={{ marginBottom: 10 }}>
+        <button type="button" className={"btn" + (viewTab === "my" ? " btn-primary" : "")} onClick={() => setViewTab("my")}>My Notebook</button>
+        <button type="button" className={"btn" + (viewTab === "instructor" ? " btn-primary" : "")} onClick={() => setViewTab("instructor")}>Instructor Notes (view only)</button>
+        <button type="button" className={"btn" + (viewTab === "template" ? " btn-primary" : "")} onClick={() => setViewTab("template")}>Incident Handler Template (view only)</button>
+      </div>
+      {viewTab === "my" ? (
       <div className="grid-top" style={{ gridTemplateColumns: "260px 1fr" }}>
         <section className="panel">
           <div className="panel-h">Notebook Pages</div>
@@ -68,7 +78,10 @@ export function StudentNotesPage() {
         <button type="button" className="btn" onClick={() => cmd("bold")}><b>B</b></button>
         <button type="button" className="btn" onClick={() => cmd("italic")}><i>I</i></button>
         <button type="button" className="btn" onClick={() => cmd("underline")}><u>U</u></button>
-        <button type="button" className="btn" onClick={() => cmd("hiliteColor", "yellow")}>Highlight</button>
+        <button type="button" className="btn" onClick={() => cmd("hiliteColor", "yellow")}>Highlight Y</button>
+        <button type="button" className="btn" onClick={() => cmd("hiliteColor", "#93c5fd")}>Highlight Blue</button>
+        <button type="button" className="btn" onClick={() => cmd("hiliteColor", "#86efac")}>Highlight Green</button>
+        <button type="button" className="btn" onClick={() => cmd("hiliteColor", "#fca5a5")}>Highlight Red</button>
         <label className="filter-check">
           Text color
           <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
@@ -94,6 +107,21 @@ export function StudentNotesPage() {
           </div>
         </section>
       </div>
+      ) : null}
+
+      {viewTab === "instructor" ? (
+        <section className="panel">
+          <div className="panel-h">Instructor Notes</div>
+          <div style={{ padding: 12 }} dangerouslySetInnerHTML={{ __html: instructorPages.instructorNotes }} />
+        </section>
+      ) : null}
+
+      {viewTab === "template" ? (
+        <section className="panel">
+          <div className="panel-h">Incident Handler Template</div>
+          <div style={{ padding: 12 }} dangerouslySetInnerHTML={{ __html: instructorPages.incidentTemplate }} />
+        </section>
+      ) : null}
     </div>
   );
 }

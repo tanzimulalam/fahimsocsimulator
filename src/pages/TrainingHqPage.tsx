@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useClassroom } from "../context/ClassroomContext";
 import { useSimulator } from "../context/SimulatorContext";
 import { sha64 } from "../data/mockData";
@@ -32,7 +32,7 @@ const scenarioNotes: Record<string, string> = {
 
 export function TrainingHqPage() {
   const { incidents, activityLog, addNotification, resetAll, clearActivityLog, addLabIncident } = useSimulator();
-  const { session, students, scenarios, activities, notes, publishScenario, gradeStudent } = useClassroom();
+  const { session, students, scenarios, activities, notes, instructorPages, publishScenario, gradeStudent, updateInstructorPage, deleteStudent } = useClassroom();
   const [scenario, setScenario] = useState<keyof typeof scenarioNotes>("Phish -> Endpoint -> Lateral");
   const [section, setSection] = useState<"All" | "Section A" | "Section B" | "Section C">("All");
   const [assignees, setAssignees] = useState<Record<string, string>>({});
@@ -47,6 +47,12 @@ export function TrainingHqPage() {
   const [selectedPageId, setSelectedPageId] = useState("");
   const [gradeScore, setGradeScore] = useState("85");
   const [gradeComment, setGradeComment] = useState("Good workflow and clear evidence trail.");
+  const [instTab, setInstTab] = useState<"instructorNotes" | "incidentTemplate">("instructorNotes");
+  const [instDraft, setInstDraft] = useState("");
+
+  useEffect(() => {
+    setInstDraft(instTab === "instructorNotes" ? instructorPages.instructorNotes : instructorPages.incidentTemplate);
+  }, [instTab, instructorPages.instructorNotes, instructorPages.incidentTemplate]);
 
   const filteredStudents = useMemo(
     () =>
@@ -394,6 +400,34 @@ export function TrainingHqPage() {
               </table>
             </div>
             <div style={{ padding: 12 }}>
+              <h3 style={{ margin: "0 0 8px" }}>Manage Student Accounts</h3>
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead><tr><th>Student</th><th>Created</th><th>Action</th></tr></thead>
+                  <tbody>
+                    {students.map((s) => (
+                      <tr key={s.id}>
+                        <td>{s.name}</td>
+                        <td>{new Date(s.createdAt).toLocaleString()}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="link-btn"
+                            onClick={() => {
+                              deleteStudent(s.id);
+                              addNotification("Student removed", `${s.name} account and all related data deleted.`);
+                            }}
+                          >
+                            Delete student and all data
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div style={{ padding: 12 }}>
               <h3 style={{ margin: "0 0 8px" }}>Student Notes Snapshot</h3>
               {Object.keys(notes).length === 0 ? (
                 <p className="dash-muted">No student notes saved yet.</p>
@@ -449,6 +483,26 @@ export function TrainingHqPage() {
                 <thead><tr><th>Posted</th><th>Title</th><th>Instructions</th><th>Start</th></tr></thead>
                 <tbody>{scenarios.slice(0, 15).map((s) => <tr key={s.id}><td>{new Date(s.createdAt).toLocaleString()}</td><td>{s.title}</td><td>{s.instructions}</td><td>{s.startPath ?? "/student-desk"}</td></tr>)}</tbody>
               </table>
+            </div>
+            <div style={{ padding: 12 }}>
+              <h3 style={{ margin: "0 0 8px" }}>Instructor Controlled Student Pages</h3>
+              <div className="def-tabs">
+                <button type="button" className={"btn" + (instTab === "instructorNotes" ? " btn-primary" : "")} onClick={() => setInstTab("instructorNotes")}>Instructor Notes</button>
+                <button type="button" className={"btn" + (instTab === "incidentTemplate" ? " btn-primary" : "")} onClick={() => setInstTab("incidentTemplate")}>Incident Handler Template</button>
+              </div>
+              <textarea className="analyst-comment-input" value={instDraft} onChange={(e) => setInstDraft(e.target.value)} />
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    updateInstructorPage(instTab, instDraft);
+                    addNotification("Instructor page updated", "Students will see the latest view-only content.");
+                  }}
+                >
+                  Save Instructor Page
+                </button>
+              </div>
             </div>
           </section>
         </div>
