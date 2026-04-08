@@ -22,6 +22,13 @@ export type AppNotification = {
   at: number;
 };
 
+export type AppActivity = {
+  id: string;
+  title: string;
+  message: string;
+  at: number;
+};
+
 function cloneIncidents(): Incident[] {
   return JSON.parse(JSON.stringify(INITIAL_INCIDENTS)) as Incident[];
 }
@@ -54,6 +61,8 @@ type SimulatorContextValue = {
   getIncidentWork: (incidentId: string) => IncidentWork;
   startScan: (incidentId: string, mode: "full" | "flash") => void;
   addIncidentComment: (incidentId: string, text: string) => void;
+  activityLog: AppActivity[];
+  clearActivityLog: () => void;
 };
 
 const SimulatorContext = createContext<SimulatorContextValue | null>(null);
@@ -68,8 +77,11 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
     incidentIds: string[];
   } | null>(null);
   const [incidentWork, setIncidentWork] = useState<Record<string, IncidentWork>>({});
+  const [activityLog, setActivityLog] = useState<AppActivity[]>([]);
 
   const addNotification = useCallback((title: string, message: string) => {
+    const a: AppActivity = { id: uid(), title, message, at: Date.now() };
+    setActivityLog((prev) => [a, ...prev].slice(0, 400));
     const n: AppNotification = {
       id: uid(),
       title,
@@ -170,6 +182,7 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearLastWorkflowAction = useCallback(() => setLastWorkflowAction(null), []);
+  const clearActivityLog = useCallback(() => setActivityLog([]), []);
 
   const resetAll = useCallback(() => {
     setIncidents(cloneIncidents());
@@ -314,6 +327,8 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
     getIncidentWork,
     startScan,
     addIncidentComment,
+    activityLog,
+    clearActivityLog,
   };
 
   return <SimulatorContext.Provider value={value}>{children}</SimulatorContext.Provider>;

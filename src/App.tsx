@@ -14,6 +14,7 @@ import { InboxPage } from "./pages/InboxPage";
 import { ManagementPage } from "./pages/ManagementPage";
 import { OutbreakPage } from "./pages/OutbreakPage";
 import { OverviewPage } from "./pages/OverviewPage";
+import { TrainingHqPage } from "./pages/TrainingHqPage";
 import { DefenderHomePage } from "./pages/defender/DefenderHomePage";
 import { DefenderAlertsPage } from "./pages/defender/DefenderAlertsPage";
 import { DefenderActionsSubmissionsPage } from "./pages/defender/DefenderActionsSubmissionsPage";
@@ -106,6 +107,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/inbox" replace />} />
           <Route path="/inbox" element={<InboxPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/training-hq" element={<TrainingHqPage />} />
           <Route path="/overview" element={<OverviewPage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/analysis" element={<AnalysisPage />} />

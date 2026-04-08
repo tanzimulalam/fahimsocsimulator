@@ -2046,6 +2046,12 @@ button.user-pill:hover {
   margin-bottom: 10px;
 }
 
+.def-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .amp-events-search {
   width: min(320px, 100%);
   padding-left: 12px;
