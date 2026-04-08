@@ -38,7 +38,6 @@ import { LandingLoginPage } from "./pages/LandingLoginPage";
 import { NotepadPage } from "./pages/NotepadPage";
 import { StudentAccessPage } from "./pages/StudentAccessPage";
 import { StudentDeskPage } from "./pages/StudentDeskPage";
-import { StudentNotesPage } from "./pages/StudentNotesPage";
 import { XdrControlCenterPage } from "./pages/xdr/XdrControlCenterPage";
 import { XdrIncidentsPage } from "./pages/xdr/XdrIncidentsPage";
 import { XdrInvestigatePage } from "./pages/xdr/XdrInvestigatePage";
@@ -142,7 +141,6 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/training-hq" element={role === "admin" ? <TrainingHqPage /> : <Navigate to="/student-desk" replace />} />
           <Route path="/student-desk" element={role === "student" ? <StudentDeskPage /> : <Navigate to="/training-hq" replace />} />
-          <Route path="/student-notes" element={role === "student" ? <StudentNotesPage /> : <Navigate to="/training-hq" replace />} />
           <Route path="/overview" element={<OverviewPage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/analysis" element={<AnalysisPage />} />

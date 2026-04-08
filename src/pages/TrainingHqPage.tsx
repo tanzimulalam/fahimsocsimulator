@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useClassroom } from "../context/ClassroomContext";
 import { useSimulator } from "../context/SimulatorContext";
 import { sha64 } from "../data/mockData";
@@ -32,7 +32,7 @@ const scenarioNotes: Record<string, string> = {
 
 export function TrainingHqPage() {
   const { incidents, activityLog, addNotification, resetAll, clearActivityLog, addLabIncident } = useSimulator();
-  const { session, students, scenarios, activities, notes, instructorPages, publishScenario, gradeStudent, updateInstructorPage, deleteStudent } = useClassroom();
+  const { session, students, scenarios, activities, publishScenario, gradeStudent, deleteStudent } = useClassroom();
   const [scenario, setScenario] = useState<keyof typeof scenarioNotes>("Phish -> Endpoint -> Lateral");
   const [section, setSection] = useState<"All" | "Section A" | "Section B" | "Section C">("All");
   const [assignees, setAssignees] = useState<Record<string, string>>({});
@@ -44,15 +44,8 @@ export function TrainingHqPage() {
   const [defSeed, setDefSeed] = useState("Defender incident should include mailbox, user risk, and alert timeline.");
   const [createAmpIncident, setCreateAmpIncident] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState("");
-  const [selectedPageId, setSelectedPageId] = useState("");
   const [gradeScore, setGradeScore] = useState("85");
   const [gradeComment, setGradeComment] = useState("Good workflow and clear evidence trail.");
-  const [instTab, setInstTab] = useState<"instructorNotes" | "incidentTemplate">("instructorNotes");
-  const [instDraft, setInstDraft] = useState("");
-
-  useEffect(() => {
-    setInstDraft(instTab === "instructorNotes" ? instructorPages.instructorNotes : instructorPages.incidentTemplate);
-  }, [instTab, instructorPages.instructorNotes, instructorPages.incidentTemplate]);
 
   const filteredStudents = useMemo(
     () =>
@@ -428,18 +421,7 @@ export function TrainingHqPage() {
               </div>
             </div>
             <div style={{ padding: 12 }}>
-              <h3 style={{ margin: "0 0 8px" }}>Student Notes Snapshot</h3>
-              {Object.keys(notes).length === 0 ? (
-                <p className="dash-muted">No student notes saved yet.</p>
-              ) : (
-                <ul className="dash-list">
-                  {Object.values(notes).slice(0, 10).map((n) => (
-                    <li key={n.studentId}>
-                      {students.find((s) => s.id === n.studentId)?.name ?? n.studentId} - updated {new Date(Math.max(...n.pages.map((p) => p.updatedAt), 0)).toLocaleString()}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <h3 style={{ margin: "0 0 8px" }}>Student Grading</h3>
               <div className="def-toolbar" style={{ marginTop: 8 }}>
                 <select className="select-like" value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)}>
                   <option value="">Select student to grade</option>
@@ -447,21 +429,6 @@ export function TrainingHqPage() {
                 </select>
                 <input className="def-search-inline" style={{ width: 90 }} value={gradeScore} onChange={(e) => setGradeScore(e.target.value)} />
               </div>
-              {selectedStudentId ? (
-                <>
-                  <select className="select-like" value={selectedPageId} onChange={(e) => setSelectedPageId(e.target.value)}>
-                    <option value="">Select notebook page to review</option>
-                    {(notes[selectedStudentId]?.pages ?? []).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-                  </select>
-                  {selectedPageId ? (
-                    <div
-                      className="panel"
-                      style={{ marginTop: 8, padding: 8, maxHeight: 220, overflow: "auto" }}
-                      dangerouslySetInnerHTML={{ __html: notes[selectedStudentId]?.pages.find((p) => p.id === selectedPageId)?.html ?? "" }}
-                    />
-                  ) : null}
-                </>
-              ) : null}
               <textarea className="analyst-comment-input" value={gradeComment} onChange={(e) => setGradeComment(e.target.value)} />
               <div className="modal-actions">
                 <button
@@ -483,26 +450,6 @@ export function TrainingHqPage() {
                 <thead><tr><th>Posted</th><th>Title</th><th>Instructions</th><th>Start</th></tr></thead>
                 <tbody>{scenarios.slice(0, 15).map((s) => <tr key={s.id}><td>{new Date(s.createdAt).toLocaleString()}</td><td>{s.title}</td><td>{s.instructions}</td><td>{s.startPath ?? "/student-desk"}</td></tr>)}</tbody>
               </table>
-            </div>
-            <div style={{ padding: 12 }}>
-              <h3 style={{ margin: "0 0 8px" }}>Instructor Controlled Student Pages</h3>
-              <div className="def-tabs">
-                <button type="button" className={"btn" + (instTab === "instructorNotes" ? " btn-primary" : "")} onClick={() => setInstTab("instructorNotes")}>Instructor Notes</button>
-                <button type="button" className={"btn" + (instTab === "incidentTemplate" ? " btn-primary" : "")} onClick={() => setInstTab("incidentTemplate")}>Incident Handler Template</button>
-              </div>
-              <textarea className="analyst-comment-input" value={instDraft} onChange={(e) => setInstDraft(e.target.value)} />
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => {
-                    updateInstructorPage(instTab, instDraft);
-                    addNotification("Instructor page updated", "Students will see the latest view-only content.");
-                  }}
-                >
-                  Save Instructor Page
-                </button>
-              </div>
             </div>
           </section>
         </div>

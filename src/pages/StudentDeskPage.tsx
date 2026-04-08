@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { useClassroom } from "../context/ClassroomContext";
 import { useSimulator } from "../context/SimulatorContext";
 
@@ -12,11 +11,8 @@ export function StudentDeskPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Student Desk</h1>
-          <p className="console-subtitle">Welcome, {session.name}. Track instructor scenarios and record your incident notes.</p>
+          <p className="console-subtitle">Welcome, {session.name}. Track instructor scenarios and complete assigned labs.</p>
           <p className="dash-muted">Current grade: {grades[session.studentId]?.score ?? "N/A"} {grades[session.studentId]?.comment ? `- ${grades[session.studentId]?.comment}` : ""}</p>
-        </div>
-        <div className="header-actions">
-          <Link to="/student-notes" className="btn btn-primary">Open My Incident Notes</Link>
         </div>
       </div>
       <section className="panel">

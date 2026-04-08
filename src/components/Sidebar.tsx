@@ -4,7 +4,6 @@ const items: { to: string; label: string; sub?: boolean; adminOnly?: boolean; st
   { to: "/dashboard", label: "Dashboard" },
   { to: "/training-hq", label: "Training HQ", adminOnly: true },
   { to: "/student-desk", label: "Student Desk", studentOnly: true },
-  { to: "/student-notes", label: "My Notes", studentOnly: true },
   { to: "/inbox", label: "Inbox" },
   { to: "/overview", label: "Overview" },
   { to: "/events", label: "Events" },
