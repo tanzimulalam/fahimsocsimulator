@@ -3,7 +3,7 @@ import { useClassroom } from "../context/ClassroomContext";
 import { useSimulator } from "../context/SimulatorContext";
 
 export function StudentDeskPage() {
-  const { session, scenarios, addStudentActivity } = useClassroom();
+  const { session, scenarios, grades, addStudentActivity } = useClassroom();
   const { addNotification } = useSimulator();
   if (!session || session.role !== "student") return null;
 
@@ -13,6 +13,7 @@ export function StudentDeskPage() {
         <div>
           <h1 className="page-title">Student Desk</h1>
           <p className="console-subtitle">Welcome, {session.name}. Track instructor scenarios and record your incident notes.</p>
+          <p className="dash-muted">Current grade: {grades[session.studentId]?.score ?? "N/A"} {grades[session.studentId]?.comment ? `- ${grades[session.studentId]?.comment}` : ""}</p>
         </div>
         <div className="header-actions">
           <Link to="/student-notes" className="btn btn-primary">Open My Incident Notes</Link>
@@ -38,6 +39,7 @@ export function StudentDeskPage() {
                       onClick={() => {
                         addStudentActivity("Scenario opened", s.title);
                         addNotification("Lab Scenario", `Instructor posted: ${s.title}`);
+                        if (s.startPath) window.location.href = s.startPath;
                       }}
                     >
                       Start

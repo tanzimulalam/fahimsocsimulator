@@ -1991,6 +1991,19 @@ button.user-pill:hover {
   line-height: 1.6;
 }
 
+.student-note-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.student-note-table th,
+.student-note-table td {
+  border: 1px solid #9ca3af;
+  padding: 6px 8px;
+  min-height: 24px;
+}
+
 .notepad-canvas {
   position: absolute;
   inset: 0;

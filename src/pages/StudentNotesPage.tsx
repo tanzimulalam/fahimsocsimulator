@@ -2,16 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import { useClassroom } from "../context/ClassroomContext";
 
 export function StudentNotesPage() {
-  const { session, notes, saveStudentNote, addStudentActivity } = useClassroom();
+  const { session, notes, grades, createNotebookPage, setActiveNotebookPage, saveStudentNote, addStudentActivity } = useClassroom();
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [color, setColor] = useState("#111111");
+  const [title, setTitle] = useState("");
   const studentId = session?.role === "student" ? session.studentId : null;
   if (!studentId) return null;
+  const sid = studentId;
+  const notebook = notes[sid];
+  const activePageId = notebook?.activePageId ?? notebook?.pages[0]?.id ?? "";
+  const activePage = notebook?.pages.find((p) => p.id === activePageId);
 
   useEffect(() => {
-    const html = notes[studentId]?.html;
+    const html = activePage?.html ?? "";
     if (editorRef.current && html) editorRef.current.innerHTML = html;
-  }, [notes, studentId]);
+  }, [activePage?.id, activePage?.html]);
 
   function cmd(name: string, value?: string) {
     document.execCommand(name, false, value);
@@ -19,13 +24,46 @@ export function StudentNotesPage() {
 
   function save() {
     const html = editorRef.current?.innerHTML ?? "";
-    saveStudentNote(studentId!, html);
+    if (!activePageId) return;
+    saveStudentNote(sid, activePageId, html);
     addStudentActivity("Incident note saved", "Updated student notebook");
+  }
+
+  function newPage() {
+    const t = title.trim() || `Daily Work - ${new Date().toLocaleDateString()}`;
+    createNotebookPage(sid, t);
+    setTitle("");
+    addStudentActivity("Notebook page created", t);
   }
 
   return (
     <div className="page-scroll">
       <h1 className="page-title">My Incident Handler Notes</h1>
+      <p className="dash-muted">OneNote-style notebook with daily pages. Instructor can review and grade your notes.</p>
+      <div className="grid-top" style={{ gridTemplateColumns: "260px 1fr" }}>
+        <section className="panel">
+          <div className="panel-h">Notebook Pages</div>
+          <div style={{ padding: 10 }}>
+            <input className="def-search-inline" style={{ width: "100%" }} placeholder="New page title (e.g., Day 1 triage)" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <div className="modal-actions">
+              <button type="button" className="btn btn-primary" onClick={newPage}>Add Page</button>
+            </div>
+            <ul className="dash-list">
+              {(notebook?.pages ?? []).map((p) => (
+                <li key={p.id}>
+                  <button type="button" className="link-btn" onClick={() => setActiveNotebookPage(sid, p.id)}>
+                    {p.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="dash-muted">Grade: {grades[sid]?.score ?? "N/A"}</p>
+            {grades[sid]?.comment ? <p className="dash-muted">Instructor feedback: {grades[sid]?.comment}</p> : null}
+          </div>
+        </section>
+        <section className="panel">
+          <div className="panel-h">{activePage?.title ?? "Select or create a page"}</div>
+          <div style={{ padding: 10 }}>
       <div className="def-toolbar">
         <button type="button" className="btn" onClick={() => cmd("bold")}><b>B</b></button>
         <button type="button" className="btn" onClick={() => cmd("italic")}><i>I</i></button>
@@ -42,7 +80,7 @@ export function StudentNotesPage() {
           onClick={() =>
             cmd(
               "insertHTML",
-              "<table border='1' style='border-collapse:collapse;width:100%'><tr><th>Time</th><th>Evidence</th><th>Action</th></tr><tr><td></td><td></td><td></td></tr></table><br/>"
+              "<table class='student-note-table'><tr><th>Time</th><th>Evidence</th><th>Action</th></tr><tr><td></td><td></td><td></td></tr></table><br/>"
             )
           }
         >
@@ -52,6 +90,9 @@ export function StudentNotesPage() {
       </div>
       <div className="notepad-wrap" style={{ minHeight: "60vh" }}>
         <div ref={editorRef} className="notepad-editor" contentEditable suppressContentEditableWarning spellCheck />
+      </div>
+          </div>
+        </section>
       </div>
     </div>
   );

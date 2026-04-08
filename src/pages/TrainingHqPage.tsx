@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { useClassroom } from "../context/ClassroomContext";
 import { useSimulator } from "../context/SimulatorContext";
+import { sha64 } from "../data/mockData";
 import { csvEscape, downloadText } from "../lib/fakeExport";
+import type { Incident } from "../types";
 
 type Mission = {
   id: string;
@@ -29,8 +31,8 @@ const scenarioNotes: Record<string, string> = {
 };
 
 export function TrainingHqPage() {
-  const { incidents, activityLog, addNotification, resetAll, clearActivityLog } = useSimulator();
-  const { session, students, scenarios, activities, notes, publishScenario } = useClassroom();
+  const { incidents, activityLog, addNotification, resetAll, clearActivityLog, addLabIncident } = useSimulator();
+  const { session, students, scenarios, activities, notes, publishScenario, gradeStudent } = useClassroom();
   const [scenario, setScenario] = useState<keyof typeof scenarioNotes>("Phish -> Endpoint -> Lateral");
   const [section, setSection] = useState<"All" | "Section A" | "Section B" | "Section C">("All");
   const [assignees, setAssignees] = useState<Record<string, string>>({});
@@ -40,6 +42,11 @@ export function TrainingHqPage() {
   const [ampSeed, setAmpSeed] = useState("Add suspicious endpoint event sequence in AMP inbox.");
   const [xdrSeed, setXdrSeed] = useState("Correlate process graph with malicious domain and outbound C2.");
   const [defSeed, setDefSeed] = useState("Defender incident should include mailbox, user risk, and alert timeline.");
+  const [createAmpIncident, setCreateAmpIncident] = useState(true);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [selectedPageId, setSelectedPageId] = useState("");
+  const [gradeScore, setGradeScore] = useState("85");
+  const [gradeComment, setGradeComment] = useState("Good workflow and clear evidence trail.");
 
   const filteredStudents = useMemo(
     () =>
@@ -75,6 +82,12 @@ export function TrainingHqPage() {
 
   function postScenarioToStudents() {
     if (!session || session.role !== "admin") return;
+    let startPath = "/student-desk";
+    if (createAmpIncident) {
+      const inc = generateLabIncident();
+      addLabIncident(inc);
+      startPath = `/inbox?incident=${encodeURIComponent(inc.id)}`;
+    }
     publishScenario(
       {
         title: scenarioTitle.trim() || "Untitled Scenario",
@@ -82,10 +95,93 @@ export function TrainingHqPage() {
         ampSeed: ampSeed.trim(),
         xdrSeed: xdrSeed.trim(),
         defenderSeed: defSeed.trim(),
+        startPath,
       },
       session.name
     );
     addNotification("Scenario posted", `Lab scenario "${scenarioTitle}" has been published to all registered students.`);
+  }
+
+  function generateLabIncident(): Incident {
+    const id = `lab-${Date.now()}`;
+    const rand = Math.floor(Math.random() * 240) + 10;
+    const hostname = `LAB-HOST-${Math.floor(Math.random() * 900 + 100)}.datagroup.local`;
+    const left = Math.random().toString(16).slice(2, 10).padEnd(8, "a");
+    const right = Math.random().toString(16).slice(2, 10).padEnd(8, "b");
+    const firstSeen = new Date(Date.now() - 3600_000).toISOString().replace("T", " ").slice(0, 19) + " UTC";
+    return {
+      id,
+      status: "requires_attention",
+      hostLine: hostname,
+      groupName: "Work from Home Group",
+      eventCount: 2,
+      recordCount: 1,
+      host: {
+        hostname,
+        os: "Windows 10 Home (Build 19045.2846)",
+        connectorVersion: "8.0.1.21164",
+        installDateUtc: "2022-12-10 00:15:46 UTC",
+        connectorGuid: crypto.randomUUID(),
+        processorId: "bfabfbff000806e9",
+        definitionsLastUpdatedUtc: firstSeen,
+        ciscoSecureClientId: "N/A",
+        group: "Work from Home Group",
+        policy: "Work from Home Policy for Windows",
+        internalIp: `172.20.2.${rand}`,
+        externalIp: `173.95.30.${Math.floor(Math.random() * 220 + 20)}`,
+        lastSeenUtc: firstSeen,
+        definitionVersion: "TETRA 64 bit (daily version: 32479)",
+        updateServer: "tetra-defs.amp.cisco.com",
+        riskScore: Math.floor(Math.random() * 40 + 60),
+      },
+      events: [
+        {
+          id: `${id}-e1`,
+          severity: "medium",
+          eventType: "Quarantine Failure",
+          sha256Prefix: left,
+          sha256Suffix: right,
+          sha256Full: sha64(left, right),
+          timestampUtc: firstSeen,
+          filename: "BGAUpdate.exe",
+          disposition: "Unknown",
+          filePath: "C:\\Users\\Public\\Downloads\\BGAUpdate.exe",
+          processPath: "C:\\Windows\\System32\\rundll32.exe",
+          parentProcess: "C:\\Windows\\explorer.exe",
+          user: "Data Group\\lab.student",
+          localIp: `172.20.2.${rand}`,
+          remoteIp: "203.0.113.44",
+          remotePort: "443",
+          direction: "outbound",
+        },
+        {
+          id: `${id}-e2`,
+          severity: "medium",
+          eventType: "File Detection",
+          sha256Prefix: left,
+          sha256Suffix: right,
+          sha256Full: sha64(left, right),
+          timestampUtc: firstSeen,
+          filename: "BGAUpdate.exe",
+          disposition: "Unknown",
+        },
+      ],
+      vulnerabilitiesNote: "No known software vulnerabilities observed.",
+      xdrSir: {
+        sirId: `SIR-${Math.floor(Math.random() * 90000 + 10000)}`,
+        sirTitle: "Instructor-generated lab scenario",
+        msisacFeedId: "MSI-TRAINING",
+        sectorContext: "Education training lab",
+        firstSeenUtc: firstSeen,
+        lastObservedUtc: firstSeen,
+        narrative: "Instructor generated this scenario to simulate triage, hunt, and containment workflow.",
+        maliciousIpv4: [{ ip: "203.0.113.44", context: "Outbound C2 beacon", firstSeenUtc: firstSeen }],
+        maliciousDomains: [{ domain: "malicious-site.com", context: "Phishing redirect", observedVia: "Email click telemetry" }],
+        dnsQueriesSample: ["malicious-site.com", "cdn.badlab.net"],
+        ttps: ["T1566.001", "T1059.001", "T1071.001"],
+        relatedIntelNote: "Randomized training IOC package generated by instructor.",
+      },
+    };
   }
 
   function resetClass() {
@@ -271,6 +367,10 @@ export function TrainingHqPage() {
               <label className="filter-check">AMP Incident Seed <textarea className="analyst-comment-input" value={ampSeed} onChange={(e) => setAmpSeed(e.target.value)} /></label>
               <label className="filter-check">XDR Reasoning Seed <textarea className="analyst-comment-input" value={xdrSeed} onChange={(e) => setXdrSeed(e.target.value)} /></label>
               <label className="filter-check">Defender Reasoning Seed <textarea className="analyst-comment-input" value={defSeed} onChange={(e) => setDefSeed(e.target.value)} /></label>
+              <label className="filter-check">
+                <input type="checkbox" checked={createAmpIncident} onChange={(e) => setCreateAmpIncident(e.target.checked)} />
+                Generate new random AMP/XDR/Defender-linked incident with this scenario
+              </label>
               <div className="modal-actions">
                 <button type="button" className="btn btn-primary" onClick={postScenarioToStudents}>Post Scenario to All Students</button>
               </div>
@@ -301,17 +401,53 @@ export function TrainingHqPage() {
                 <ul className="dash-list">
                   {Object.values(notes).slice(0, 10).map((n) => (
                     <li key={n.studentId}>
-                      {students.find((s) => s.id === n.studentId)?.name ?? n.studentId} - updated {new Date(n.updatedAt).toLocaleString()}
+                      {students.find((s) => s.id === n.studentId)?.name ?? n.studentId} - updated {new Date(Math.max(...n.pages.map((p) => p.updatedAt), 0)).toLocaleString()}
                     </li>
                   ))}
                 </ul>
               )}
+              <div className="def-toolbar" style={{ marginTop: 8 }}>
+                <select className="select-like" value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)}>
+                  <option value="">Select student to grade</option>
+                  {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <input className="def-search-inline" style={{ width: 90 }} value={gradeScore} onChange={(e) => setGradeScore(e.target.value)} />
+              </div>
+              {selectedStudentId ? (
+                <>
+                  <select className="select-like" value={selectedPageId} onChange={(e) => setSelectedPageId(e.target.value)}>
+                    <option value="">Select notebook page to review</option>
+                    {(notes[selectedStudentId]?.pages ?? []).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                  </select>
+                  {selectedPageId ? (
+                    <div
+                      className="panel"
+                      style={{ marginTop: 8, padding: 8, maxHeight: 220, overflow: "auto" }}
+                      dangerouslySetInnerHTML={{ __html: notes[selectedStudentId]?.pages.find((p) => p.id === selectedPageId)?.html ?? "" }}
+                    />
+                  ) : null}
+                </>
+              ) : null}
+              <textarea className="analyst-comment-input" value={gradeComment} onChange={(e) => setGradeComment(e.target.value)} />
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    if (!selectedStudentId) return;
+                    gradeStudent(selectedStudentId, Number(gradeScore) || 0, gradeComment);
+                    addNotification("Grading", "Student grade updated and visible to student.");
+                  }}
+                >
+                  Save Grade
+                </button>
+              </div>
             </div>
             <div className="panel-h">Published Scenarios ({scenarios.length})</div>
             <div className="table-wrap">
               <table className="data-table">
-                <thead><tr><th>Posted</th><th>Title</th><th>Instructions</th></tr></thead>
-                <tbody>{scenarios.slice(0, 15).map((s) => <tr key={s.id}><td>{new Date(s.createdAt).toLocaleString()}</td><td>{s.title}</td><td>{s.instructions}</td></tr>)}</tbody>
+                <thead><tr><th>Posted</th><th>Title</th><th>Instructions</th><th>Start</th></tr></thead>
+                <tbody>{scenarios.slice(0, 15).map((s) => <tr key={s.id}><td>{new Date(s.createdAt).toLocaleString()}</td><td>{s.title}</td><td>{s.instructions}</td><td>{s.startPath ?? "/student-desk"}</td></tr>)}</tbody>
               </table>
             </div>
           </section>

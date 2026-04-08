@@ -61,6 +61,7 @@ type SimulatorContextValue = {
   getIncidentWork: (incidentId: string) => IncidentWork;
   startScan: (incidentId: string, mode: "full" | "flash") => void;
   addIncidentComment: (incidentId: string, text: string) => void;
+  addLabIncident: (incident: Incident) => void;
   activityLog: AppActivity[];
   clearActivityLog: () => void;
 };
@@ -162,6 +163,11 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
       };
     });
   }, []);
+
+  const addLabIncident = useCallback((incident: Incident) => {
+    setIncidents((prev) => [incident, ...prev]);
+    addNotification("Lab incident posted", `${incident.hostLine} was added by instructor and requires attention.`);
+  }, [addNotification]);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
@@ -328,6 +334,7 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
     getIncidentWork,
     startScan,
     addIncidentComment,
+    addLabIncident,
     activityLog,
     clearActivityLog,
   };

@@ -20,6 +20,7 @@ export type LabScenario = {
   defenderSeed: string;
   createdAt: number;
   createdBy: string;
+  startPath?: string;
 };
 
 export type StudentActivity = {
@@ -31,18 +32,16 @@ export type StudentActivity = {
   at: number;
 };
 
-export type StudentNote = {
-  studentId: string;
-  html: string;
-  updatedAt: number;
-};
+export type NotebookPage = { id: string; title: string; html: string; updatedAt: number };
+export type StudentNotebook = { studentId: string; pages: NotebookPage[]; activePageId?: string };
 
 type ClassroomState = {
   students: StudentProfile[];
   scenarios: LabScenario[];
   activities: StudentActivity[];
-  notes: Record<string, StudentNote>;
+  notes: Record<string, StudentNotebook>;
   seenScenarioAt: Record<string, number>;
+  grades: Record<string, { score: number; comment: string; updatedAt: number }>;
 };
 
 const STORE_KEY = "socClassroomStateV1";
@@ -53,7 +52,7 @@ function uid() {
 
 function loadState(): ClassroomState {
   const raw = localStorage.getItem(STORE_KEY);
-  if (!raw) return { students: [], scenarios: [], activities: [], notes: {}, seenScenarioAt: {} };
+  if (!raw) return { students: [], scenarios: [], activities: [], notes: {}, seenScenarioAt: {}, grades: {} };
   try {
     const p = JSON.parse(raw) as ClassroomState;
     return {
@@ -62,9 +61,10 @@ function loadState(): ClassroomState {
       activities: p.activities ?? [],
       notes: p.notes ?? {},
       seenScenarioAt: p.seenScenarioAt ?? {},
+      grades: p.grades ?? {},
     };
   } catch {
-    return { students: [], scenarios: [], activities: [], notes: {}, seenScenarioAt: {} };
+    return { students: [], scenarios: [], activities: [], notes: {}, seenScenarioAt: {}, grades: {} };
   }
 }
 
@@ -74,11 +74,15 @@ type Ctx = {
   students: StudentProfile[];
   scenarios: LabScenario[];
   activities: StudentActivity[];
-  notes: Record<string, StudentNote>;
+  notes: Record<string, StudentNotebook>;
+  grades: Record<string, { score: number; comment: string; updatedAt: number }>;
   registerStudent: (name: string) => StudentProfile;
   publishScenario: (data: Omit<LabScenario, "id" | "createdAt" | "createdBy">, by: string) => void;
   addStudentActivity: (action: string, details: string) => void;
-  saveStudentNote: (studentId: string, html: string) => void;
+  createNotebookPage: (studentId: string, title: string) => void;
+  setActiveNotebookPage: (studentId: string, pageId: string) => void;
+  saveStudentNote: (studentId: string, pageId: string, html: string) => void;
+  gradeStudent: (studentId: string, score: number, comment: string) => void;
   unseenScenariosForStudent: (studentId: string) => LabScenario[];
   markScenariosSeen: (studentId: string) => void;
 };
@@ -126,6 +130,7 @@ export function ClassroomProvider({ children }: { children: ReactNode }) {
       scenarios: state.scenarios,
       activities: state.activities,
       notes: state.notes,
+      grades: state.grades,
       registerStudent: (name: string) => {
         const n = name.trim();
         const existing = state.students.find((s) => s.name.toLowerCase() === n.toLowerCase());
@@ -150,8 +155,35 @@ export function ClassroomProvider({ children }: { children: ReactNode }) {
           ].slice(0, 2000),
         }));
       },
-      saveStudentNote: (studentId, html) => {
-        setState((prev) => ({ ...prev, notes: { ...prev.notes, [studentId]: { studentId, html, updatedAt: Date.now() } } }));
+      createNotebookPage: (studentId, title) => {
+        setState((prev) => {
+          const nb = prev.notes[studentId] ?? { studentId, pages: [], activePageId: undefined };
+          const p: NotebookPage = { id: uid(), title: title || `Entry ${nb.pages.length + 1}`, html: "", updatedAt: Date.now() };
+          return { ...prev, notes: { ...prev.notes, [studentId]: { ...nb, pages: [p, ...nb.pages], activePageId: p.id } } };
+        });
+      },
+      setActiveNotebookPage: (studentId, pageId) => {
+        setState((prev) => {
+          const nb = prev.notes[studentId];
+          if (!nb) return prev;
+          return { ...prev, notes: { ...prev.notes, [studentId]: { ...nb, activePageId: pageId } } };
+        });
+      },
+      saveStudentNote: (studentId, pageId, html) => {
+        setState((prev) => {
+          const nb = prev.notes[studentId] ?? { studentId, pages: [], activePageId: undefined };
+          const hasPage = nb.pages.some((p) => p.id === pageId);
+          const pages = hasPage
+            ? nb.pages.map((p) => (p.id === pageId ? { ...p, html, updatedAt: Date.now() } : p))
+            : [{ id: pageId, title: "Untitled", html, updatedAt: Date.now() }, ...nb.pages];
+          return { ...prev, notes: { ...prev.notes, [studentId]: { ...nb, pages, activePageId: pageId } } };
+        });
+      },
+      gradeStudent: (studentId, score, comment) => {
+        setState((prev) => ({
+          ...prev,
+          grades: { ...prev.grades, [studentId]: { score, comment, updatedAt: Date.now() } },
+        }));
       },
       unseenScenariosForStudent: (studentId) => {
         const seen = state.seenScenarioAt[studentId] ?? 0;
