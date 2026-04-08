@@ -8,24 +8,30 @@ export function StudentNotesPage() {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [color, setColor] = useState("#111111");
   const [title, setTitle] = useState("");
-  const [viewTab, setViewTab] = useState<"my" | "instructor" | "template">("my");
+  const [specialPage, setSpecialPage] = useState<"" | "instructor" | "template">("");
   const studentId = session?.role === "student" ? session.studentId : null;
   if (!studentId) return null;
   const sid = studentId;
   const notebook = notes[sid];
   const activePageId = notebook?.activePageId ?? notebook?.pages[0]?.id ?? "";
   const activePage = notebook?.pages.find((p) => p.id === activePageId);
+  const readOnly = specialPage !== "";
 
   useEffect(() => {
+    if (readOnly) return;
     const html = activePage?.html ?? "";
     if (editorRef.current && html) editorRef.current.innerHTML = html;
-  }, [activePage?.id, activePage?.html]);
+  }, [activePage?.id, activePage?.html, readOnly]);
 
   function cmd(name: string, value?: string) {
     document.execCommand(name, false, value);
   }
 
   function save() {
+    if (readOnly) {
+      addNotification("Notes", "Instructor pages are view only for students.");
+      return;
+    }
     const html = editorRef.current?.innerHTML ?? "";
     if (!activePageId) return;
     saveStudentNote(sid, activePageId, html);
@@ -44,12 +50,6 @@ export function StudentNotesPage() {
     <div className="page-scroll">
       <h1 className="page-title">My Incident Handler Notes</h1>
       <p className="dash-muted">OneNote-style notebook with daily pages. Instructor can review and grade your notes.</p>
-      <div className="def-tabs" style={{ marginBottom: 10 }}>
-        <button type="button" className={"btn" + (viewTab === "my" ? " btn-primary" : "")} onClick={() => setViewTab("my")}>My Notebook</button>
-        <button type="button" className={"btn" + (viewTab === "instructor" ? " btn-primary" : "")} onClick={() => setViewTab("instructor")}>Instructor Notes (view only)</button>
-        <button type="button" className={"btn" + (viewTab === "template" ? " btn-primary" : "")} onClick={() => setViewTab("template")}>Incident Handler Template (view only)</button>
-      </div>
-      {viewTab === "my" ? (
       <div className="grid-top" style={{ gridTemplateColumns: "260px 1fr" }}>
         <section className="panel">
           <div className="panel-h">Notebook Pages</div>
@@ -59,9 +59,19 @@ export function StudentNotesPage() {
               <button type="button" className="btn btn-primary" onClick={newPage}>Add Page</button>
             </div>
             <ul className="dash-list">
+              <li>
+                <button type="button" className="link-btn" onClick={() => setSpecialPage("instructor")}>
+                  Instructor Notes (view only)
+                </button>
+              </li>
+              <li>
+                <button type="button" className="link-btn" onClick={() => setSpecialPage("template")}>
+                  Incident Handler Template (view only)
+                </button>
+              </li>
               {(notebook?.pages ?? []).map((p) => (
                 <li key={p.id}>
-                  <button type="button" className="link-btn" onClick={() => setActiveNotebookPage(sid, p.id)}>
+                  <button type="button" className="link-btn" onClick={() => { setSpecialPage(""); setActiveNotebookPage(sid, p.id); }}>
                     {p.title}
                   </button>
                 </li>
@@ -72,8 +82,19 @@ export function StudentNotesPage() {
           </div>
         </section>
         <section className="panel">
-          <div className="panel-h">{activePage?.title ?? "Select or create a page"}</div>
+          <div className="panel-h">
+            {specialPage === "instructor" ? "Instructor Notes" : specialPage === "template" ? "Incident Handler Template" : activePage?.title ?? "Select or create a page"}
+          </div>
           <div style={{ padding: 10 }}>
+      {specialPage ? (
+        <div className="notepad-wrap" style={{ minHeight: "60vh" }}>
+          <div
+            className="notepad-editor"
+            dangerouslySetInnerHTML={{ __html: specialPage === "instructor" ? instructorPages.instructorNotes : instructorPages.incidentTemplate }}
+          />
+        </div>
+      ) : (
+      <>
       <div className="def-toolbar">
         <button type="button" className="btn" onClick={() => cmd("bold")}><b>B</b></button>
         <button type="button" className="btn" onClick={() => cmd("italic")}><i>I</i></button>
@@ -104,24 +125,11 @@ export function StudentNotesPage() {
       <div className="notepad-wrap" style={{ minHeight: "60vh" }}>
         <div ref={editorRef} className="notepad-editor" contentEditable suppressContentEditableWarning spellCheck />
       </div>
+      </>
+      )}
           </div>
         </section>
       </div>
-      ) : null}
-
-      {viewTab === "instructor" ? (
-        <section className="panel">
-          <div className="panel-h">Instructor Notes</div>
-          <div style={{ padding: 12 }} dangerouslySetInnerHTML={{ __html: instructorPages.instructorNotes }} />
-        </section>
-      ) : null}
-
-      {viewTab === "template" ? (
-        <section className="panel">
-          <div className="panel-h">Incident Handler Template</div>
-          <div style={{ padding: 12 }} dangerouslySetInnerHTML={{ __html: instructorPages.incidentTemplate }} />
-        </section>
-      ) : null}
     </div>
   );
 }

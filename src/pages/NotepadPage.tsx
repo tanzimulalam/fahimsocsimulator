@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useClassroom } from "../context/ClassroomContext";
 
 type NoteTemplate = {
   id: string;
@@ -57,6 +58,7 @@ const PRESET_TEMPLATES: Array<{ id: string; name: string; html: string }> = [
 ];
 
 export function NotepadPage() {
+  const { students, notes } = useClassroom();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
@@ -73,6 +75,8 @@ export function NotepadPage() {
     }
   });
   const [status, setStatus] = useState("Ready");
+  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [selectedStudentPageId, setSelectedStudentPageId] = useState("");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -221,6 +225,30 @@ export function NotepadPage() {
                 ))}
               </ul>
             )}
+            <hr className="notepad-divider" />
+            <h3>View Student Notes</h3>
+            <select className="select-like" value={selectedStudentId} onChange={(e) => {
+              setSelectedStudentId(e.target.value);
+              setSelectedStudentPageId("");
+            }}>
+              <option value="">Select student</option>
+              {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            {selectedStudentId ? (
+              <>
+                <select className="select-like" value={selectedStudentPageId} onChange={(e) => setSelectedStudentPageId(e.target.value)}>
+                  <option value="">Select page</option>
+                  {(notes[selectedStudentId]?.pages ?? []).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+                {selectedStudentPageId ? (
+                  <div
+                    className="panel"
+                    style={{ padding: 8, maxHeight: 200, overflow: "auto" }}
+                    dangerouslySetInnerHTML={{ __html: notes[selectedStudentId]?.pages.find((p) => p.id === selectedStudentPageId)?.html ?? "" }}
+                  />
+                ) : null}
+              </>
+            ) : null}
           </div>
         </aside>
         <div className="notepad-wrap" ref={wrapRef}>

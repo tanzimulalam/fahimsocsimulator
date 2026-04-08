@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import type { InvestigationNode, NodeSeverity } from "../../data/xdrInvestigation";
 import type { IncidentXdrSir } from "../../types";
 import { talosReputationUrl, virusTotalFileUrl } from "../../lib/threatIntelLinks";
 import { useSimulator } from "../../context/SimulatorContext";
+import { Modal } from "../Modal";
 
 function verdictFor(sev: NodeSeverity): { label: string; sevClass: string } {
   if (sev === "malicious") return { label: "Malicious", sevClass: "sev-high" };
@@ -23,6 +25,8 @@ type Props = {
 export function InvestigationDrawer({ node, incidentId, sirLabel, xdrSir, onClose }: Props) {
   const { addNotification } = useSimulator();
   const navigate = useNavigate();
+  const [respOpen, setRespOpen] = useState(false);
+  const [respSource, setRespSource] = useState("");
 
   if (!node) {
     return (
@@ -41,6 +45,19 @@ export function InvestigationDrawer({ node, incidentId, sirLabel, xdrSir, onClos
   const vt = virusTotalFileUrl(node.sha256);
   const talos = talosReputationUrl(node.sha256);
   const v = verdictFor(node.severity);
+  const currentNode = node;
+
+  function openResponse(source: string) {
+    setRespSource(source);
+    setRespOpen(true);
+  }
+
+  function doResponse(action: "block_sha" | "isolate_host" | "block_ip") {
+    if (action === "block_sha") addNotification("Response Action", `SHA256 blocked from ${respSource}: ${currentNode.sha256.slice(0, 16)}...`);
+    if (action === "isolate_host") addNotification("Response Action", `Host isolation queued from ${respSource} for this malicious observable.`);
+    if (action === "block_ip") addNotification("Response Action", `Related malicious IP blocked from ${respSource}.`);
+    setRespOpen(false);
+  }
 
   return (
     <aside className="xdr-drawer">
@@ -101,9 +118,7 @@ export function InvestigationDrawer({ node, incidentId, sirLabel, xdrSir, onClos
                 type="button"
                 className="link-btn"
                 title="Add SHA256 to simple custom detections list DEFCON to detect and quarantine"
-                onClick={() =>
-                  addNotification("DEFCON list", "SHA256 queued for custom detection DEFCON (simulated).")
-                }
+                onClick={() => openResponse("DEFCON")}
               >
                 Add SHA256 to custom detections DEFCON
               </button>
@@ -112,7 +127,7 @@ export function InvestigationDrawer({ node, incidentId, sirLabel, xdrSir, onClos
               <button
                 type="button"
                 className="link-btn"
-                onClick={() => addNotification("Email Security", "SHA256 added to Email Security Blocklist (simulated).")}
+                onClick={() => openResponse("Email Security Blocklist")}
               >
                 Add SHA256 to custom detections Email Security Blocklist
               </button>
@@ -121,7 +136,7 @@ export function InvestigationDrawer({ node, incidentId, sirLabel, xdrSir, onClos
               <button
                 type="button"
                 className="link-btn"
-                onClick={() => addNotification("Quick SCD", "SHA256 added to Quick SCD (simulated).")}
+                onClick={() => openResponse("Quick SCD")}
               >
                 Add SHA256 to custom detections Quick SCD
               </button>
@@ -184,6 +199,14 @@ export function InvestigationDrawer({ node, incidentId, sirLabel, xdrSir, onClos
           </button>
         </div>
       </div>
+      <Modal open={respOpen} title={`Response Options — ${respSource}`} onClose={() => setRespOpen(false)}>
+        <p>Select remediation action for this malicious indicator.</p>
+        <div className="modal-actions">
+          <button type="button" className="btn btn-primary" onClick={() => doResponse("block_sha")}>Block SHA256</button>
+          <button type="button" className="btn" onClick={() => doResponse("isolate_host")}>Isolate Host</button>
+          <button type="button" className="btn" onClick={() => doResponse("block_ip")}>Block Related IP</button>
+        </div>
+      </Modal>
     </aside>
   );
 }
