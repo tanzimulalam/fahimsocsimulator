@@ -32,7 +32,7 @@ export function XdrControlCenterPage() {
 
       <div className="xdr-cc-tabs">
         <button type="button" className="xdr-tab active">Operational Insights</button>
-        <button type="button" className="xdr-tab" onClick={() => addNotification("Tab", "UNCP dashboard preset loaded (simulated).")}>UNCP - Copy</button>
+        <button type="button" className="xdr-tab" onClick={() => addNotification("Tab", "Data Group dashboard preset loaded (simulated).")}>Data Group - Copy</button>
         <button type="button" className="xdr-tab" onClick={() => addNotification("Tab", "AMP + SECURE ENDPOINTS preset loaded (simulated).")}>AMP+ SECURE ENDPOINTS + Copy</button>
         <button type="button" className="xdr-tab" onClick={() => addNotification("Tab", "Secure Malware Analytics preset loaded (simulated).")}>Secure Malware Analytics - Copy</button>
       </div>
