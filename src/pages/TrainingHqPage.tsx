@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useClassroom } from "../context/ClassroomContext";
 import { useSimulator } from "../context/SimulatorContext";
 import { csvEscape, downloadText } from "../lib/fakeExport";
 
@@ -8,11 +9,6 @@ type Mission = {
   title: string;
   points: number;
   keywords: string[];
-};
-
-type Student = {
-  name: string;
-  section: "Section A" | "Section B" | "Section C";
 };
 
 const MISSIONS: Mission[] = [
@@ -26,15 +22,6 @@ const MISSIONS: Mission[] = [
   { id: "m-8", track: "All", title: "Resolve incident with response action", points: 10, keywords: ["Resolved", "Response"] },
 ];
 
-const STUDENTS: Student[] = [
-  { name: "Alice Smith", section: "Section A" },
-  { name: "Bob Jones", section: "Section A" },
-  { name: "Daniel Kim", section: "Section B" },
-  { name: "Nina Patel", section: "Section B" },
-  { name: "Jamal Reed", section: "Section C" },
-  { name: "Olivia Brown", section: "Section C" },
-];
-
 const scenarioNotes: Record<string, string> = {
   "Phish -> Endpoint -> Lateral": "Cross-workload kill chain seeded. Start with Defender Explorer, pivot to XDR, then contain in AMP.",
   "Insider Threat Data Staging": "Look for unusual file movement, archive tools, and suspicious cloud upload behavior.",
@@ -43,14 +30,23 @@ const scenarioNotes: Record<string, string> = {
 
 export function TrainingHqPage() {
   const { incidents, activityLog, addNotification, resetAll, clearActivityLog } = useSimulator();
+  const { session, students, scenarios, activities, notes, publishScenario } = useClassroom();
   const [scenario, setScenario] = useState<keyof typeof scenarioNotes>("Phish -> Endpoint -> Lateral");
-  const [section, setSection] = useState<Student["section"] | "All">("All");
+  const [section, setSection] = useState<"All" | "Section A" | "Section B" | "Section C">("All");
   const [assignees, setAssignees] = useState<Record<string, string>>({});
-  const [tab, setTab] = useState<"missions" | "case" | "intel" | "wallboard">("missions");
+  const [tab, setTab] = useState<"missions" | "case" | "intel" | "wallboard" | "classroom">("missions");
+  const [scenarioTitle, setScenarioTitle] = useState("Lab Scenario - Multi-stage phishing chain");
+  const [scenarioInstruction, setScenarioInstruction] = useState("Investigate email origin, pivot to IOC, and contain affected endpoints.");
+  const [ampSeed, setAmpSeed] = useState("Add suspicious endpoint event sequence in AMP inbox.");
+  const [xdrSeed, setXdrSeed] = useState("Correlate process graph with malicious domain and outbound C2.");
+  const [defSeed, setDefSeed] = useState("Defender incident should include mailbox, user risk, and alert timeline.");
 
   const filteredStudents = useMemo(
-    () => STUDENTS.filter((s) => section === "All" || s.section === section),
-    [section]
+    () =>
+      students
+        .map((s, i) => ({ ...s, section: (["Section A", "Section B", "Section C"][i % 3] as "Section A" | "Section B" | "Section C") }))
+        .filter((s) => section === "All" || s.section === section),
+    [section, students]
   );
 
   const missionStatus = useMemo(
@@ -75,6 +71,21 @@ export function TrainingHqPage() {
 
   function launchScenario() {
     addNotification("Scenario launched", `${scenario} started. ${scenarioNotes[scenario]}`);
+  }
+
+  function postScenarioToStudents() {
+    if (!session || session.role !== "admin") return;
+    publishScenario(
+      {
+        title: scenarioTitle.trim() || "Untitled Scenario",
+        instructions: scenarioInstruction.trim() || "Follow instructor guidance.",
+        ampSeed: ampSeed.trim(),
+        xdrSeed: xdrSeed.trim(),
+        defenderSeed: defSeed.trim(),
+      },
+      session.name
+    );
+    addNotification("Scenario posted", `Lab scenario "${scenarioTitle}" has been published to all registered students.`);
   }
 
   function resetClass() {
@@ -125,12 +136,13 @@ export function TrainingHqPage() {
         <button type="button" className={"btn" + (tab === "case" ? " btn-primary" : "")} onClick={() => setTab("case")}>Case Management</button>
         <button type="button" className={"btn" + (tab === "intel" ? " btn-primary" : "")} onClick={() => setTab("intel")}>Hunt + Intel Workbench</button>
         <button type="button" className={"btn" + (tab === "wallboard" ? " btn-primary" : "")} onClick={() => setTab("wallboard")}>SOC Wallboard</button>
+        <button type="button" className={"btn" + (tab === "classroom" ? " btn-primary" : "")} onClick={() => setTab("classroom")}>Classroom Control</button>
       </div>
 
       <div className="amp-events-filters">
         <label className="filter-check">
           Section
-          <select className="select-like" value={section} onChange={(e) => setSection(e.target.value as Student["section"] | "All")}>
+          <select className="select-like" value={section} onChange={(e) => setSection(e.target.value as "All" | "Section A" | "Section B" | "Section C")}>
             <option>All</option><option>Section A</option><option>Section B</option><option>Section C</option>
           </select>
         </label>
@@ -199,7 +211,7 @@ export function TrainingHqPage() {
                         onChange={(e) => setAssignees((p) => ({ ...p, [inc.id]: e.target.value }))}
                       >
                         <option value="">Unassigned</option>
-                        {filteredStudents.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
+                        {filteredStudents.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
                       </select>
                     </td>
                   </tr>
@@ -247,6 +259,63 @@ export function TrainingHqPage() {
             <div className="dash-kpi"><div className="dash-kpi-value">{activityLog.length}</div><div className="dash-kpi-label">Analyst Actions Logged</div></div>
           </div>
         </section>
+      ) : null}
+
+      {tab === "classroom" ? (
+        <div className="grid-top">
+          <section className="panel">
+            <div className="panel-h">Publish New Lab Scenario to Students</div>
+            <div style={{ padding: 12 }}>
+              <label className="filter-check">Scenario Title <input className="def-search-inline" style={{ width: "100%" }} value={scenarioTitle} onChange={(e) => setScenarioTitle(e.target.value)} /></label>
+              <label className="filter-check">Instructions <textarea className="analyst-comment-input" value={scenarioInstruction} onChange={(e) => setScenarioInstruction(e.target.value)} /></label>
+              <label className="filter-check">AMP Incident Seed <textarea className="analyst-comment-input" value={ampSeed} onChange={(e) => setAmpSeed(e.target.value)} /></label>
+              <label className="filter-check">XDR Reasoning Seed <textarea className="analyst-comment-input" value={xdrSeed} onChange={(e) => setXdrSeed(e.target.value)} /></label>
+              <label className="filter-check">Defender Reasoning Seed <textarea className="analyst-comment-input" value={defSeed} onChange={(e) => setDefSeed(e.target.value)} /></label>
+              <div className="modal-actions">
+                <button type="button" className="btn btn-primary" onClick={postScenarioToStudents}>Post Scenario to All Students</button>
+              </div>
+            </div>
+          </section>
+          <section className="panel">
+            <div className="panel-h">Latest Student Activity + Notes</div>
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead><tr><th>Time</th><th>Student</th><th>Action</th><th>Details</th></tr></thead>
+                <tbody>
+                  {activities.slice(0, 20).map((a) => (
+                    <tr key={a.id}>
+                      <td>{new Date(a.at).toLocaleString()}</td>
+                      <td>{a.studentName}</td>
+                      <td>{a.action}</td>
+                      <td>{a.details}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ padding: 12 }}>
+              <h3 style={{ margin: "0 0 8px" }}>Student Notes Snapshot</h3>
+              {Object.keys(notes).length === 0 ? (
+                <p className="dash-muted">No student notes saved yet.</p>
+              ) : (
+                <ul className="dash-list">
+                  {Object.values(notes).slice(0, 10).map((n) => (
+                    <li key={n.studentId}>
+                      {students.find((s) => s.id === n.studentId)?.name ?? n.studentId} - updated {new Date(n.updatedAt).toLocaleString()}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="panel-h">Published Scenarios ({scenarios.length})</div>
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead><tr><th>Posted</th><th>Title</th><th>Instructions</th></tr></thead>
+                <tbody>{scenarios.slice(0, 15).map((s) => <tr key={s.id}><td>{new Date(s.createdAt).toLocaleString()}</td><td>{s.title}</td><td>{s.instructions}</td></tr>)}</tbody>
+              </table>
+            </div>
+          </section>
+        </div>
       ) : null}
     </div>
   );

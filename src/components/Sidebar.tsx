@@ -1,8 +1,10 @@
 import { NavLink } from "react-router-dom";
 
-const items: { to: string; label: string; sub?: boolean }[] = [
+const items: { to: string; label: string; sub?: boolean; adminOnly?: boolean; studentOnly?: boolean }[] = [
   { to: "/dashboard", label: "Dashboard" },
-  { to: "/training-hq", label: "Training HQ" },
+  { to: "/training-hq", label: "Training HQ", adminOnly: true },
+  { to: "/student-desk", label: "Student Desk", studentOnly: true },
+  { to: "/student-notes", label: "My Notes", studentOnly: true },
   { to: "/inbox", label: "Inbox" },
   { to: "/overview", label: "Overview" },
   { to: "/events", label: "Events" },
@@ -11,7 +13,7 @@ const items: { to: string; label: string; sub?: boolean }[] = [
   { to: "/management", label: "Management", sub: true },
 ];
 
-export function Sidebar() {
+export function Sidebar({ role }: { role: "admin" | "student" }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
@@ -25,7 +27,11 @@ export function Sidebar() {
       </div>
       <nav aria-label="Primary">
         <ul className="nav-list">
-          {items.map((item) => (
+          {items.filter((item) => {
+            if (item.adminOnly && role !== "admin") return false;
+            if (item.studentOnly && role !== "student") return false;
+            return true;
+          }).map((item) => (
             <li key={item.to} className="nav-item">
               <NavLink
                 to={item.to}

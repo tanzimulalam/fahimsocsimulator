@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { useClassroom } from "../context/ClassroomContext";
 import { useSimulator } from "../context/SimulatorContext";
 import { Modal } from "./Modal";
 import { SearchResultsModal } from "./SearchResultsModal";
 
-export function TopBar() {
+export function TopBar({ role, onLogout }: { role: "admin" | "student"; onLogout: () => void }) {
   const {
     incidents,
     searchQuery,
@@ -14,6 +15,7 @@ export function TopBar() {
     dismissNotification,
     addNotification,
   } = useSimulator();
+  const { session, unseenScenariosForStudent, markScenariosSeen } = useClassroom();
   const [panelOpen, setPanelOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -31,6 +33,14 @@ export function TopBar() {
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
+
+  useEffect(() => {
+    if (!session || session.role !== "student") return;
+    const unseen = unseenScenariosForStudent(session.studentId);
+    if (unseen.length === 0) return;
+    unseen.forEach((s) => addNotification("New Lab Scenario", `Instructor posted: ${s.title}`));
+    markScenariosSeen(session.studentId);
+  }, [session, unseenScenariosForStudent, markScenariosSeen, addNotification]);
 
   function toggleNotif() {
     setPanelOpen((prev) => {
@@ -136,8 +146,8 @@ export function TopBar() {
                 TF
               </div>
               <div className="user-meta">
-                <strong>FahimTanzimul</strong>
-                <small>Data Group</small>
+                <strong>{session?.name ?? "FahimTanzimul"}</strong>
+                <small>{role === "admin" ? "Instructor · Data Group" : "Student · Data Group"}</small>
               </div>
             </button>
             {profileOpen ? (
@@ -147,8 +157,8 @@ export function TopBar() {
                     TF
                   </div>
                   <div>
-                    <div className="profile-name">FahimTanzimul</div>
-                    <div className="profile-org">Data Group · SOC Instructor (lab)</div>
+                    <div className="profile-name">{session?.name ?? "FahimTanzimul"}</div>
+                    <div className="profile-org">Data Group · {role === "admin" ? "SOC Instructor (lab)" : "SOC Student (lab)"}</div>
                   </div>
                 </div>
                 <dl className="profile-kv">
@@ -173,8 +183,8 @@ export function TopBar() {
                   <button type="button" className="btn" onClick={() => addNotification("Profile", "Account settings are not persisted in this build.")}>
                     Account settings
                   </button>
-                  <button type="button" className="btn" onClick={() => addNotification("Profile", "Signed out (simulated) — refresh page to reset.")}>
-                    Sign out (demo)
+                  <button type="button" className="btn" onClick={onLogout}>
+                    Sign out
                   </button>
                 </div>
               </div>

@@ -80,6 +80,7 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
   const [activityLog, setActivityLog] = useState<AppActivity[]>([]);
 
   const addNotification = useCallback((title: string, message: string) => {
+    window.dispatchEvent(new CustomEvent("sim-activity", { detail: { title, message } }));
     const a: AppActivity = { id: uid(), title, message, at: Date.now() };
     setActivityLog((prev) => [a, ...prev].slice(0, 400));
     const n: AppNotification = {

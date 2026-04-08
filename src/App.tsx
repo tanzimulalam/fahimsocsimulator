@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useClassroom } from "./context/ClassroomContext";
 import { AmpChrome } from "./layouts/AmpChrome";
 import { DefenderLayout } from "./layouts/DefenderLayout";
 import { AmpFloatingButton } from "./components/AmpFloatingButton";
@@ -35,6 +36,9 @@ import { DefenderThreatIntelPage } from "./pages/defender/DefenderThreatIntelPag
 import { DefenderVulnerabilityPage } from "./pages/defender/DefenderVulnerabilityPage";
 import { LandingLoginPage } from "./pages/LandingLoginPage";
 import { NotepadPage } from "./pages/NotepadPage";
+import { StudentAccessPage } from "./pages/StudentAccessPage";
+import { StudentDeskPage } from "./pages/StudentDeskPage";
+import { StudentNotesPage } from "./pages/StudentNotesPage";
 import { XdrControlCenterPage } from "./pages/xdr/XdrControlCenterPage";
 import { XdrIncidentsPage } from "./pages/xdr/XdrIncidentsPage";
 import { XdrInvestigatePage } from "./pages/xdr/XdrInvestigatePage";
@@ -42,32 +46,61 @@ import { XdrInvestigatePage } from "./pages/xdr/XdrInvestigatePage";
 type Role = "admin" | "student";
 
 export default function App() {
+  const { setSession } = useClassroom();
   const [role, setRole] = useState<Role | null>(null);
+  const [studentPending, setStudentPending] = useState(false);
 
   useEffect(() => {
     const saved = sessionStorage.getItem("socRole");
-    if (saved === "admin" || saved === "student") setRole(saved);
+    if (saved === "admin") {
+      setRole("admin");
+      setSession({ role: "admin", name: "FahimAdmin" });
+    }
+    if (saved === "student") {
+      const studentId = sessionStorage.getItem("socStudentId");
+      const studentName = sessionStorage.getItem("socStudentName");
+      if (studentId && studentName) {
+        setRole("student");
+        setSession({ role: "student", studentId, name: studentName });
+      } else {
+        setStudentPending(true);
+      }
+    }
   }, []);
 
   function login(username: string, password: string) {
     if (username === "FahimAdmin" && password === "F123456f@%%") {
       sessionStorage.setItem("socRole", "admin");
       setRole("admin");
+      setSession({ role: "admin", name: "FahimAdmin" });
       return true;
     }
     if (username === "FahimStudent" && password === "F123456f@%") {
-      sessionStorage.setItem("socRole", "student");
-      setRole("student");
+      setStudentPending(true);
       return true;
     }
     return false;
   }
 
-  function logout() {
-    sessionStorage.removeItem("socRole");
-    setRole(null);
+  function completeStudentLogin(studentId: string, name: string) {
+    sessionStorage.setItem("socRole", "student");
+    sessionStorage.setItem("socStudentId", studentId);
+    sessionStorage.setItem("socStudentName", name);
+    setRole("student");
+    setStudentPending(false);
+    setSession({ role: "student", studentId, name });
   }
 
+  function logout() {
+    sessionStorage.removeItem("socRole");
+    sessionStorage.removeItem("socStudentId");
+    sessionStorage.removeItem("socStudentName");
+    setRole(null);
+    setStudentPending(false);
+    setSession(null);
+  }
+
+  if (studentPending && !role) return <StudentAccessPage onProceed={completeStudentLogin} />;
   if (!role) return <LandingLoginPage onLogin={login} />;
 
   return (
@@ -103,11 +136,13 @@ export default function App() {
           <Route path="*" element={<Navigate to="home" replace />} />
         </Route>
         <Route path="/notepad" element={role === "admin" ? <NotepadPage /> : <Navigate to="/inbox" replace />} />
-        <Route element={<AmpChrome />}>
+        <Route element={<AmpChrome role={role} onLogout={logout} />}>
           <Route path="/" element={<Navigate to="/inbox" replace />} />
           <Route path="/inbox" element={<InboxPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/training-hq" element={<TrainingHqPage />} />
+          <Route path="/training-hq" element={role === "admin" ? <TrainingHqPage /> : <Navigate to="/student-desk" replace />} />
+          <Route path="/student-desk" element={role === "student" ? <StudentDeskPage /> : <Navigate to="/training-hq" replace />} />
+          <Route path="/student-notes" element={role === "student" ? <StudentNotesPage /> : <Navigate to="/training-hq" replace />} />
           <Route path="/overview" element={<OverviewPage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/analysis" element={<AnalysisPage />} />
@@ -120,9 +155,6 @@ export default function App() {
       <DefenderFloatingButton />
       <XdrFloatingButton />
       {role === "admin" ? <NotepadFloatingButton /> : null}
-      <button type="button" className="logout-fab" onClick={logout} title="Logout">
-        Logout
-      </button>
     </>
   );
 }
