@@ -7,9 +7,11 @@ import { buildInvestigationNodes, sirHeadline, type InvestigationNode } from "..
 import type { Incident } from "../../types";
 import { useSimulator } from "../../context/SimulatorContext";
 import { findIncidentBySha256, normalizeSha256Input, uniqueSha256sFromIncident } from "../../lib/sha256";
+import { useClassroom } from "../../context/ClassroomContext";
 
 export function XdrInvestigatePage() {
-  const { incidents, addNotification, responseActions } = useSimulator();
+  const { incidents, addNotification, responseActions, logResponseAction } = useSimulator();
+  const { session } = useClassroom();
   const [searchParams, setSearchParams] = useSearchParams();
   const incidentIdParam = searchParams.get("incident") ?? "";
   const shaParam = searchParams.get("sha") ?? "";
@@ -123,6 +125,26 @@ export function XdrInvestigatePage() {
       latest: rows[0] ?? null,
     };
   }, [responseActions, activeId]);
+
+  function quickNodeAction(node: InvestigationNode, action: "block_sha256" | "allow_sha256" | "isolate_host") {
+    if (!activeId) return;
+    const msg =
+      action === "block_sha256"
+        ? "Quick action: SHA blocked from graph node."
+        : action === "allow_sha256"
+          ? "Quick action: SHA allowed from graph node."
+          : "Quick action: host isolation queued from graph node.";
+    addNotification("Response Action", msg);
+    logResponseAction({
+      incidentId: activeId,
+      hostLine: activeIncident?.hostLine ?? "Unknown host",
+      nodeLabel: node.label,
+      sha256: node.sha256,
+      source: "Graph quick action",
+      action,
+      actor: session?.name ?? "Analyst",
+    });
+  }
 
   return (
     <div className="xdr-investigate">
@@ -241,6 +263,7 @@ export function XdrInvestigatePage() {
           selectedId={selected?.id ?? null}
           onSelect={(n) => setSelected(n)}
           onRefresh={() => addNotification("Investigate", "Graph refreshed from AMP observables + active filters.")}
+          onQuickAction={quickNodeAction}
         />
         <InvestigationDrawer
           node={selected}

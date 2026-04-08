@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { InvestigationNode } from "../../data/xdrInvestigation";
 
 type Props = {
@@ -6,12 +6,22 @@ type Props = {
   selectedId: string | null;
   onSelect: (node: InvestigationNode) => void;
   onRefresh?: () => void;
+  onQuickAction?: (node: InvestigationNode, action: "block_sha256" | "allow_sha256" | "isolate_host") => void;
 };
 
-export function InvestigationGrid({ nodes, selectedId, onSelect, onRefresh }: Props) {
+export function InvestigationGrid({ nodes, selectedId, onSelect, onRefresh, onQuickAction }: Props) {
   const [zoom, setZoom] = useState(1);
   const [tooltip, setTooltip] = useState<string | null>(null);
   const [tool, setTool] = useState<"select" | "pan">("select");
+  const [menu, setMenu] = useState<{ x: number; y: number; node: InvestigationNode } | null>(null);
+
+  useEffect(() => {
+    function closeMenu() {
+      setMenu(null);
+    }
+    window.addEventListener("click", closeMenu);
+    return () => window.removeEventListener("click", closeMenu);
+  }, []);
 
   const zoomIn = useCallback(() => setZoom((z) => Math.min(1.6, z + 0.1)), []);
   const zoomOut = useCallback(() => setZoom((z) => Math.max(0.5, z - 0.1)), []);
@@ -67,6 +77,20 @@ export function InvestigationGrid({ nodes, selectedId, onSelect, onRefresh }: Pr
           </button>
         </div>
       ) : null}
+      {menu ? (
+        <div className="xdr-node-menu" style={{ left: menu.x, top: menu.y }}>
+          <button type="button" onClick={() => { onSelect(menu.node); setMenu(null); }}>Open details</button>
+          <button type="button" onClick={() => { onQuickAction?.(menu.node, "block_sha256"); setMenu(null); }}>
+            Quick block SHA
+          </button>
+          <button type="button" onClick={() => { onQuickAction?.(menu.node, "allow_sha256"); setMenu(null); }}>
+            Quick allow SHA
+          </button>
+          <button type="button" onClick={() => { onQuickAction?.(menu.node, "isolate_host"); setMenu(null); }}>
+            Quick isolate host
+          </button>
+        </div>
+      ) : null}
       <div className="xdr-grid-scroll">
         <div className="xdr-grid-inner" style={{ transform: `scale(${zoom})` }}>
           <div className="xdr-grid-selection-hint" aria-hidden>
@@ -85,6 +109,10 @@ export function InvestigationGrid({ nodes, selectedId, onSelect, onRefresh }: Pr
                 }
                 title={`${n.label} — ${n.shaDisplay} (${n.severity})`}
                 onClick={() => onSelect(n)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setMenu({ x: e.clientX - 80, y: e.clientY - 110, node: n });
+                }}
                 aria-label={`${n.label} ${n.shaDisplay}`}
               />
             ))}
