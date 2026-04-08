@@ -29,6 +29,18 @@ export type AppActivity = {
   at: number;
 };
 
+export type ResponseActionRecord = {
+  id: string;
+  incidentId: string;
+  hostLine: string;
+  nodeLabel: string;
+  sha256: string;
+  source: string;
+  action: "block_sha256" | "isolate_host" | "block_ip";
+  actor: string;
+  at: number;
+};
+
 function cloneIncidents(): Incident[] {
   return JSON.parse(JSON.stringify(INITIAL_INCIDENTS)) as Incident[];
 }
@@ -64,9 +76,12 @@ type SimulatorContextValue = {
   addLabIncident: (incident: Incident) => void;
   activityLog: AppActivity[];
   clearActivityLog: () => void;
+  responseActions: ResponseActionRecord[];
+  logResponseAction: (entry: Omit<ResponseActionRecord, "id" | "at">) => void;
 };
 
 const SimulatorContext = createContext<SimulatorContextValue | null>(null);
+const RESPONSE_ACTIONS_KEY = "socResponseActionsV1";
 
 export function SimulatorProvider({ children }: { children: ReactNode }) {
   const [incidents, setIncidents] = useState<Incident[]>(() => cloneIncidents());
@@ -79,6 +94,16 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
   } | null>(null);
   const [incidentWork, setIncidentWork] = useState<Record<string, IncidentWork>>({});
   const [activityLog, setActivityLog] = useState<AppActivity[]>([]);
+  const [responseActions, setResponseActions] = useState<ResponseActionRecord[]>(() => {
+    const raw = localStorage.getItem(RESPONSE_ACTIONS_KEY);
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw) as ResponseActionRecord[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
 
   const addNotification = useCallback((title: string, message: string) => {
     window.dispatchEvent(new CustomEvent("sim-activity", { detail: { title, message } }));
@@ -190,6 +215,14 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
 
   const clearLastWorkflowAction = useCallback(() => setLastWorkflowAction(null), []);
   const clearActivityLog = useCallback(() => setActivityLog([]), []);
+  const logResponseAction = useCallback((entry: Omit<ResponseActionRecord, "id" | "at">) => {
+    setResponseActions((prev) => {
+      const next: ResponseActionRecord = { ...entry, id: uid(), at: Date.now() };
+      const merged = [next, ...prev].slice(0, 1000);
+      localStorage.setItem(RESPONSE_ACTIONS_KEY, JSON.stringify(merged));
+      return merged;
+    });
+  }, []);
 
   const resetAll = useCallback(() => {
     setIncidents(cloneIncidents());
@@ -197,6 +230,8 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
     setSelectedIds(new Set());
     setSearchQuery("");
     setLastWorkflowAction(null);
+    setResponseActions([]);
+    localStorage.removeItem(RESPONSE_ACTIONS_KEY);
     addNotification("Reset", "All incidents were restored to their starting state.");
   }, [addNotification]);
 
@@ -337,6 +372,8 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
     addLabIncident,
     activityLog,
     clearActivityLog,
+    responseActions,
+    logResponseAction,
   };
 
   return <SimulatorContext.Provider value={value}>{children}</SimulatorContext.Provider>;

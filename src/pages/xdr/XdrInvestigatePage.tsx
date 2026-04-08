@@ -9,7 +9,7 @@ import { useSimulator } from "../../context/SimulatorContext";
 import { findIncidentBySha256, normalizeSha256Input, uniqueSha256sFromIncident } from "../../lib/sha256";
 
 export function XdrInvestigatePage() {
-  const { incidents, addNotification } = useSimulator();
+  const { incidents, addNotification, responseActions } = useSimulator();
   const [searchParams, setSearchParams] = useSearchParams();
   const incidentIdParam = searchParams.get("incident") ?? "";
   const shaParam = searchParams.get("sha") ?? "";
@@ -109,6 +109,10 @@ export function XdrInvestigatePage() {
   }
 
   const sir = activeIncident?.xdrSir;
+  const actionRows = useMemo(
+    () => responseActions.filter((r) => r.incidentId === activeId).slice(0, 12),
+    [responseActions, activeId]
+  );
 
   return (
     <div className="xdr-investigate">
@@ -219,10 +223,38 @@ export function XdrInvestigatePage() {
         <InvestigationDrawer
           node={selected}
           incidentId={activeId || null}
+          incidentHostLine={activeIncident?.hostLine ?? null}
           sirLabel={sirLabel}
           xdrSir={sir ?? null}
           onClose={() => setSelected(null)}
         />
+      </div>
+
+      <div className="xdr-timeline-panel" style={{ marginTop: 12 }}>
+        <h3 style={{ margin: "0 0 8px", fontSize: 13 }}>Response Action Ledger</h3>
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Time</th><th>Actor</th><th>Action</th><th>Source</th><th>Node</th><th>SHA256</th>
+              </tr>
+            </thead>
+            <tbody>
+              {actionRows.length === 0 ? (
+                <tr><td colSpan={6}>No response actions recorded yet for this incident.</td></tr>
+              ) : actionRows.map((r) => (
+                <tr key={r.id}>
+                  <td>{new Date(r.at).toLocaleString()}</td>
+                  <td>{r.actor}</td>
+                  <td>{r.action}</td>
+                  <td>{r.source}</td>
+                  <td>{r.nodeLabel}</td>
+                  <td><code>{r.sha256.slice(0, 20)}...</code></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="xdr-timeline-bar">

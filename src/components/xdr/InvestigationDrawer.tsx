@@ -5,6 +5,7 @@ import type { IncidentXdrSir } from "../../types";
 import { talosReputationUrl, virusTotalFileUrl } from "../../lib/threatIntelLinks";
 import { useSimulator } from "../../context/SimulatorContext";
 import { Modal } from "../Modal";
+import { useClassroom } from "../../context/ClassroomContext";
 
 function verdictFor(sev: NodeSeverity): { label: string; sevClass: string } {
   if (sev === "malicious") return { label: "Malicious", sevClass: "sev-high" };
@@ -17,13 +18,15 @@ function verdictFor(sev: NodeSeverity): { label: string; sevClass: string } {
 type Props = {
   node: InvestigationNode | null;
   incidentId: string | null;
+  incidentHostLine: string | null;
   sirLabel: string;
   xdrSir: IncidentXdrSir | null;
   onClose: () => void;
 };
 
-export function InvestigationDrawer({ node, incidentId, sirLabel, xdrSir, onClose }: Props) {
-  const { addNotification } = useSimulator();
+export function InvestigationDrawer({ node, incidentId, incidentHostLine, sirLabel, xdrSir, onClose }: Props) {
+  const { addNotification, logResponseAction } = useSimulator();
+  const { session } = useClassroom();
   const navigate = useNavigate();
   const [respOpen, setRespOpen] = useState(false);
   const [respSource, setRespSource] = useState("");
@@ -56,6 +59,17 @@ export function InvestigationDrawer({ node, incidentId, sirLabel, xdrSir, onClos
     if (action === "block_sha") addNotification("Response Action", `SHA256 blocked from ${respSource}: ${currentNode.sha256.slice(0, 16)}...`);
     if (action === "isolate_host") addNotification("Response Action", `Host isolation queued from ${respSource} for this malicious observable.`);
     if (action === "block_ip") addNotification("Response Action", `Related malicious IP blocked from ${respSource}.`);
+    if (incidentId) {
+      logResponseAction({
+        incidentId,
+        hostLine: incidentHostLine ?? "Unknown host",
+        nodeLabel: currentNode.label,
+        sha256: currentNode.sha256,
+        source: respSource,
+        action: action === "block_sha" ? "block_sha256" : action === "isolate_host" ? "isolate_host" : "block_ip",
+        actor: session?.name ?? "Analyst",
+      });
+    }
     setRespOpen(false);
   }
 

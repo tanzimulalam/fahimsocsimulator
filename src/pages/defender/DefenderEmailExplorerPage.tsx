@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Modal } from "../../components/Modal";
 import { useSimulator } from "../../context/SimulatorContext";
 import { BASE_PHISHING_EMAILS, type MailRecord } from "../../data/defenderEmailLab";
+import {
+  loadDefenderInvestigations,
+  saveDefenderInvestigations,
+  shortId,
+  type DefenderInvestigation,
+} from "../../data/defenderInvestigations";
 
 type PivotKey =
   | "senderDomain"
@@ -16,6 +23,7 @@ const EMAIL_STATE_KEY = "defenderEmailLabState";
 
 export function DefenderEmailExplorerPage() {
   const { addNotification } = useSimulator();
+  const navigate = useNavigate();
   const [view, setView] = useState("all");
   const [pivot, setPivot] = useState<PivotKey>("deliveryAction");
   const [summaryTab, setSummaryTab] = useState("Email");
@@ -133,6 +141,37 @@ export function DefenderEmailExplorerPage() {
       prev.map((m) => (m.id === id ? { ...m, location: "Quarantine", deliveryAction: "Quarantined" } : m))
     );
     addNotification("Trash", "Email restored to quarantine for class replay.");
+  }
+
+  function startInvestigation(id: string) {
+    const mail = mails.find((m) => m.id === id);
+    if (!mail) return;
+    const inv: DefenderInvestigation = {
+      id: shortId("INV"),
+      mailId: mail.id,
+      subject: mail.subject,
+      sender: mail.sender,
+      recipient: mail.recipient,
+      createdAt: Date.now(),
+      status: "Pending actions",
+      severity: mail.threat === "Malware" ? "High" : "Medium",
+      verdict: mail.threat === "Malware" ? "Malicious" : "Suspicious",
+      graphNodes: [mail.subject, mail.sender, mail.recipient, mail.suspiciousUrl, mail.attachment],
+      evidence: [`URL: ${mail.suspiciousUrl}`, `Attachment: ${mail.attachment}`, `Reason: ${mail.reason}`],
+      actions: [
+        { id: shortId("ACT"), label: "Soft delete message copies", status: "Pending" },
+        { id: shortId("ACT"), label: "Quarantine sender domain", status: "Pending" },
+        { id: shortId("ACT"), label: "Block malicious URL", status: "Pending" },
+      ],
+      incidentStatus: "Active",
+      classification: "Phishing",
+      comment: "Investigation started from Explorer email preview.",
+    };
+    const existing = loadDefenderInvestigations();
+    saveDefenderInvestigations([inv, ...existing].slice(0, 300));
+    addNotification("Investigation created", `${inv.id} opened for ${mail.subject}`);
+    setPreviewOpen(false);
+    navigate(`/defender/investigations?investigation=${encodeURIComponent(inv.id)}`);
   }
 
   return (
@@ -315,7 +354,7 @@ export function DefenderEmailExplorerPage() {
           <button
             type="button"
             className="btn"
-            onClick={() => addNotification("Investigation", "Pivoted to email trace, URL detonation, and attachment sandbox (simulated).")}
+            onClick={() => startInvestigation(activeMailId)}
           >
             Start investigation
           </button>
