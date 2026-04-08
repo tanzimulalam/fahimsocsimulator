@@ -578,6 +578,43 @@ a.xdr-foot-badge:hover {
   padding: 8px 0;
 }
 
+.xdr-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 0 0 10px;
+}
+@media (max-width: 900px) {
+  .xdr-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+}
+.xdr-kpi-card {
+  border: 1px solid #30363d;
+  background: #0d1117;
+  border-radius: 6px;
+  padding: 10px;
+}
+.xdr-kpi-title { font-size: 11px; color: #8b949e; }
+.xdr-kpi-num { font-size: 22px; font-weight: 700; margin-top: 2px; }
+.xdr-outcome-banner {
+  margin: 0 0 12px;
+  border: 1px solid #1d4ed8;
+  background: rgba(29, 78, 216, 0.15);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.xdr-action-chip {
+  display: inline-block;
+  border: 1px solid #30363d;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.xdr-action-chip.block_sha256 { background: rgba(220, 38, 38, 0.2); color: #fca5a5; }
+.xdr-action-chip.allow_sha256 { background: rgba(16, 185, 129, 0.2); color: #86efac; }
+.xdr-action-chip.isolate_host { background: rgba(245, 158, 11, 0.2); color: #fde68a; }
+.xdr-action-chip.block_ip { background: rgba(14, 165, 233, 0.2); color: #7dd3fc; }
+
 .xdr-fab {
   position: fixed;
   z-index: 2500;

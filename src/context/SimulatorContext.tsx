@@ -36,7 +36,7 @@ export type ResponseActionRecord = {
   nodeLabel: string;
   sha256: string;
   source: string;
-  action: "block_sha256" | "isolate_host" | "block_ip";
+  action: "block_sha256" | "allow_sha256" | "isolate_host" | "block_ip";
   actor: string;
   at: number;
 };

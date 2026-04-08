@@ -113,6 +113,16 @@ export function XdrInvestigatePage() {
     () => responseActions.filter((r) => r.incidentId === activeId).slice(0, 12),
     [responseActions, activeId]
   );
+  const actionStats = useMemo(() => {
+    const rows = responseActions.filter((r) => r.incidentId === activeId);
+    return {
+      total: rows.length,
+      blocked: rows.filter((r) => r.action === "block_sha256").length,
+      allowed: rows.filter((r) => r.action === "allow_sha256").length,
+      isolated: rows.filter((r) => r.action === "isolate_host").length,
+      latest: rows[0] ?? null,
+    };
+  }, [responseActions, activeId]);
 
   return (
     <div className="xdr-investigate">
@@ -211,6 +221,18 @@ export function XdrInvestigatePage() {
         </div>
       </div>
 
+      <div className="xdr-kpi-strip">
+        <div className="xdr-kpi-card"><div className="xdr-kpi-title">Total actions</div><div className="xdr-kpi-num">{actionStats.total}</div></div>
+        <div className="xdr-kpi-card"><div className="xdr-kpi-title">Blocked SHA</div><div className="xdr-kpi-num">{actionStats.blocked}</div></div>
+        <div className="xdr-kpi-card"><div className="xdr-kpi-title">Allowed SHA</div><div className="xdr-kpi-num">{actionStats.allowed}</div></div>
+        <div className="xdr-kpi-card"><div className="xdr-kpi-title">Host Isolations</div><div className="xdr-kpi-num">{actionStats.isolated}</div></div>
+      </div>
+      {actionStats.latest ? (
+        <div className="xdr-outcome-banner">
+          Latest action: <strong>{actionStats.latest.action}</strong> by <strong>{actionStats.latest.actor}</strong> from {actionStats.latest.source} on {new Date(actionStats.latest.at).toLocaleString()}.
+        </div>
+      ) : null}
+
       {sir ? <XdrSirPanel sir={sir} /> : null}
 
       <div className="xdr-workspace">
@@ -246,7 +268,7 @@ export function XdrInvestigatePage() {
                 <tr key={r.id}>
                   <td>{new Date(r.at).toLocaleString()}</td>
                   <td>{r.actor}</td>
-                  <td>{r.action}</td>
+                  <td><span className={`xdr-action-chip ${r.action}`}>{r.action}</span></td>
                   <td>{r.source}</td>
                   <td>{r.nodeLabel}</td>
                   <td><code>{r.sha256.slice(0, 20)}...</code></td>

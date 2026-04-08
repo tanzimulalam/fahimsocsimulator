@@ -55,8 +55,9 @@ export function InvestigationDrawer({ node, incidentId, incidentHostLine, sirLab
     setRespOpen(true);
   }
 
-  function doResponse(action: "block_sha" | "isolate_host" | "block_ip") {
+  function doResponse(action: "block_sha" | "allow_sha" | "isolate_host" | "block_ip") {
     if (action === "block_sha") addNotification("Response Action", `SHA256 blocked from ${respSource}: ${currentNode.sha256.slice(0, 16)}...`);
+    if (action === "allow_sha") addNotification("Response Action", `SHA256 allow-listed from ${respSource}: ${currentNode.sha256.slice(0, 16)}...`);
     if (action === "isolate_host") addNotification("Response Action", `Host isolation queued from ${respSource} for this malicious observable.`);
     if (action === "block_ip") addNotification("Response Action", `Related malicious IP blocked from ${respSource}.`);
     if (incidentId) {
@@ -66,7 +67,7 @@ export function InvestigationDrawer({ node, incidentId, incidentHostLine, sirLab
         nodeLabel: currentNode.label,
         sha256: currentNode.sha256,
         source: respSource,
-        action: action === "block_sha" ? "block_sha256" : action === "isolate_host" ? "isolate_host" : "block_ip",
+        action: action === "block_sha" ? "block_sha256" : action === "allow_sha" ? "allow_sha256" : action === "isolate_host" ? "isolate_host" : "block_ip",
         actor: session?.name ?? "Analyst",
       });
     }
@@ -217,6 +218,7 @@ export function InvestigationDrawer({ node, incidentId, incidentHostLine, sirLab
         <p>Select remediation action for this malicious indicator.</p>
         <div className="modal-actions">
           <button type="button" className="btn btn-primary" onClick={() => doResponse("block_sha")}>Block SHA256</button>
+          <button type="button" className="btn" onClick={() => doResponse("allow_sha")}>Allow SHA256</button>
           <button type="button" className="btn" onClick={() => doResponse("isolate_host")}>Isolate Host</button>
           <button type="button" className="btn" onClick={() => doResponse("block_ip")}>Block Related IP</button>
         </div>
