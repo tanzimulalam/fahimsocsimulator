@@ -55,11 +55,51 @@ function loadState(): ClassroomState {
   if (!raw) return { students: [], scenarios: [], activities: [], notes: {}, seenScenarioAt: {}, grades: {} };
   try {
     const p = JSON.parse(raw) as ClassroomState;
+    const normalizedNotes: Record<string, StudentNotebook> = {};
+    const anyNotes = (p as unknown as { notes?: Record<string, unknown> }).notes ?? {};
+    Object.entries(anyNotes).forEach(([studentId, v]) => {
+      const rec = v as
+        | StudentNotebook
+        | { studentId?: string; html?: string; updatedAt?: number }
+        | undefined;
+      // New format
+      if (rec && Array.isArray((rec as StudentNotebook).pages)) {
+        const nb = rec as StudentNotebook;
+        normalizedNotes[studentId] = {
+          studentId,
+          pages: nb.pages.map((pg) => ({
+            id: pg.id ?? uid(),
+            title: pg.title ?? "Untitled",
+            html: pg.html ?? "",
+            updatedAt: pg.updatedAt ?? Date.now(),
+          })),
+          activePageId: nb.activePageId ?? nb.pages[0]?.id,
+        };
+        return;
+      }
+      // Legacy single-note format migration
+      const legacy = rec as { html?: string; updatedAt?: number } | undefined;
+      if (legacy && typeof legacy.html === "string") {
+        const pageId = uid();
+        normalizedNotes[studentId] = {
+          studentId,
+          pages: [
+            {
+              id: pageId,
+              title: "Migrated Note",
+              html: legacy.html,
+              updatedAt: legacy.updatedAt ?? Date.now(),
+            },
+          ],
+          activePageId: pageId,
+        };
+      }
+    });
     return {
       students: p.students ?? [],
       scenarios: p.scenarios ?? [],
       activities: p.activities ?? [],
-      notes: p.notes ?? {},
+      notes: normalizedNotes,
       seenScenarioAt: p.seenScenarioAt ?? {},
       grades: p.grades ?? {},
     };
