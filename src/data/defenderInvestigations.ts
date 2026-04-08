@@ -20,6 +20,9 @@ export type DefenderInvestigation = {
   incidentStatus: "Active" | "Resolved";
   classification: "Phishing" | "Malware" | "Clean";
   comment: string;
+  linkedIncidentId?: string;
+  linkedHostLine?: string;
+  history: Array<{ at: number; event: string }>;
 };
 
 export const DEFENDER_INVESTIGATIONS_KEY = "defenderInvestigationStateV1";

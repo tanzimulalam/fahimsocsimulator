@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useSimulator } from "../../context/SimulatorContext";
 import {
   loadDefenderInvestigations,
@@ -45,6 +45,10 @@ export function DefenderInvestigationsPage() {
               ...r,
               status: status === "Approved" ? "In progress" : "Remediated",
               actions: r.actions.map((a) => (a.id === actionId ? { ...a, status } : a)),
+              history: [
+                ...(r.history ?? []),
+                { at: Date.now(), event: `${status} action: ${r.actions.find((a) => a.id === actionId)?.label ?? actionId}` },
+              ],
             }
           : r
       )
@@ -57,7 +61,12 @@ export function DefenderInvestigationsPage() {
     setRows((prev) =>
       prev.map((r) =>
         r.id === selected.id
-          ? { ...r, status: "Resolved", incidentStatus: "Resolved" }
+          ? {
+              ...r,
+              status: "Resolved",
+              incidentStatus: "Resolved",
+              history: [...(r.history ?? []), { at: Date.now(), event: "Incident resolved as True Positive / Phishing" }],
+            }
           : r
       )
     );
@@ -90,7 +99,7 @@ export function DefenderInvestigationsPage() {
               {filtered.length === 0 ? <tr><td colSpan={6}>No investigations yet. Start one from Email Explorer preview.</td></tr> : filtered.map((r) => (
                 <tr key={r.id}>
                   <td><button type="button" className="link-btn" onClick={() => pick(r.id)}>{r.id}</button></td>
-                  <td>{r.status}</td>
+                  <td><span className={`def-status-chip ${r.status.toLowerCase().replace(/\s+/g, "-")}`}>{r.status}</span></td>
                   <td>{r.subject}</td>
                   <td>{r.recipient}</td>
                   <td>{new Date(r.createdAt).toLocaleString()}</td>
@@ -107,6 +116,12 @@ export function DefenderInvestigationsPage() {
           <div style={{ padding: 12 }}>
             <h3 style={{ marginTop: 0 }}>{selected.id} - {selected.subject}</h3>
             <p className="dash-muted">Status: {selected.status} | Incident: {selected.incidentStatus} | Classification: {selected.classification}</p>
+            {selected.linkedIncidentId ? (
+              <div className="modal-actions" style={{ justifyContent: "flex-start", marginBottom: 8 }}>
+                <Link className="btn" to={`/inbox?incident=${encodeURIComponent(selected.linkedIncidentId)}`}>Open linked AMP incident</Link>
+                <Link className="btn" to={`/xdr/investigate?incident=${encodeURIComponent(selected.linkedIncidentId)}`}>Open linked XDR case</Link>
+              </div>
+            ) : null}
             <h4 style={{ marginBottom: 6 }}>Investigation Graph (blast radius)</h4>
             <div className="xdr-inc-graph" style={{ height: 120, justifyContent: "flex-start", padding: 8 }}>
               {selected.graphNodes.slice(0, 5).map((n) => <span key={n} className="xdr-mini-node suspicious">{n}</span>)}
@@ -134,6 +149,14 @@ export function DefenderInvestigationsPage() {
             <div className="modal-actions">
               <button type="button" className="btn btn-primary" onClick={resolveIncident}>Resolve Incident</button>
             </div>
+            <h4 style={{ margin: "8px 0 6px" }}>Investigation Timeline</h4>
+            <ul className="dash-list">
+              {(selected.history ?? []).slice().sort((a, b) => b.at - a.at).map((h) => (
+                <li key={`${h.at}-${h.event}`}>
+                  {new Date(h.at).toLocaleString()} - {h.event}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

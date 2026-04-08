@@ -217,3 +217,15 @@
 .defender-fab:hover { transform: scale(1.03); }
 .defender-fab-inner { pointer-events: none; }
 
+.def-status-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid #2a2f38;
+}
+.def-status-chip.pending-actions { background: rgba(245, 159, 0, 0.14); color: #ffd07a; }
+.def-status-chip.in-progress { background: rgba(14, 165, 233, 0.14); color: #8ed8ff; }
+.def-status-chip.remediated { background: rgba(16, 185, 129, 0.14); color: #8ff0c8; }
+.def-status-chip.resolved { background: rgba(37, 99, 235, 0.14); color: #a9c6ff; }
+

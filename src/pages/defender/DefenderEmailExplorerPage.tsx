@@ -22,7 +22,7 @@ type PivotKey =
 const EMAIL_STATE_KEY = "defenderEmailLabState";
 
 export function DefenderEmailExplorerPage() {
-  const { addNotification } = useSimulator();
+  const { addNotification, incidents } = useSimulator();
   const navigate = useNavigate();
   const [view, setView] = useState("all");
   const [pivot, setPivot] = useState<PivotKey>("deliveryAction");
@@ -146,6 +146,7 @@ export function DefenderEmailExplorerPage() {
   function startInvestigation(id: string) {
     const mail = mails.find((m) => m.id === id);
     if (!mail) return;
+    const linked = incidents.find((i) => i.status === "requires_attention" || i.status === "in_progress") ?? incidents[0];
     const inv: DefenderInvestigation = {
       id: shortId("INV"),
       mailId: mail.id,
@@ -166,6 +167,13 @@ export function DefenderEmailExplorerPage() {
       incidentStatus: "Active",
       classification: "Phishing",
       comment: "Investigation started from Explorer email preview.",
+      linkedIncidentId: linked?.id,
+      linkedHostLine: linked?.hostLine,
+      history: [
+        { at: Date.now(), event: "Investigation created from Explorer preview" },
+        { at: Date.now(), event: "Automated clustering started (AIR simulated)" },
+        { at: Date.now(), event: "Pending actions generated for analyst approval" },
+      ],
     };
     const existing = loadDefenderInvestigations();
     saveDefenderInvestigations([inv, ...existing].slice(0, 300));
