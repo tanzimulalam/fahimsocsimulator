@@ -45,6 +45,8 @@ import { XdrInvestigatePage } from "./pages/xdr/XdrInvestigatePage";
 
 type Role = "admin" | "student";
 
+const SOC_ADMIN_NAME_KEY = "socAdminName";
+
 export default function App() {
   const { setSession } = useClassroom();
   const [role, setRole] = useState<Role | null>(null);
@@ -54,7 +56,8 @@ export default function App() {
     const saved = sessionStorage.getItem("socRole");
     if (saved === "admin") {
       setRole("admin");
-      setSession({ role: "admin", name: "Fahim" });
+      const adminName = sessionStorage.getItem(SOC_ADMIN_NAME_KEY) ?? "Fahim";
+      setSession({ role: "admin", name: adminName });
     }
     if (saved === "student") {
       const studentId = sessionStorage.getItem("socStudentId");
@@ -71,8 +74,16 @@ export default function App() {
   function login(username: string, password: string) {
     if (username === "Fahim" && password === "F123456f@%%") {
       sessionStorage.setItem("socRole", "admin");
+      sessionStorage.setItem(SOC_ADMIN_NAME_KEY, "Fahim");
       setRole("admin");
       setSession({ role: "admin", name: "Fahim" });
+      return true;
+    }
+    if (username === "admin" && password === "admin") {
+      sessionStorage.setItem("socRole", "admin");
+      sessionStorage.setItem(SOC_ADMIN_NAME_KEY, "admin");
+      setRole("admin");
+      setSession({ role: "admin", name: "admin" });
       return true;
     }
     if (username === "FahimStudent" && password === "F123456f@%") {
@@ -93,6 +104,7 @@ export default function App() {
 
   function logout() {
     sessionStorage.removeItem("socRole");
+    sessionStorage.removeItem(SOC_ADMIN_NAME_KEY);
     sessionStorage.removeItem("socStudentId");
     sessionStorage.removeItem("socStudentName");
     setRole(null);
