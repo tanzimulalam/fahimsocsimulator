@@ -8,11 +8,13 @@ import { SimulatorProvider } from "./context/SimulatorContext";
 import "./styles/global.css";
 
 // HashRouter: GitHub Pages has no SPA fallback for deep links on refresh (B1).
-const basename = import.meta.env.BASE_URL.replace(/\/$/, "") || "/";
+// Do NOT set basename to import.meta.env.BASE_URL: the hash path is always "/" or "/inbox"
+// etc., not "/fahimsocsimulator/...". Wrong basename makes Router render null (blank page).
+// Vite `base` still prefixes /fahimsocsimulator/ for built assets only.
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <HashRouter basename={basename}>
+    <HashRouter>
       <FontGate>
         <ClassroomProvider>
           <SimulatorProvider>
