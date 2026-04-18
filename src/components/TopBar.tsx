@@ -213,8 +213,9 @@ export function TopBar({ role, onLogout }: { role: "admin" | "student"; onLogout
           <strong>Mark Resolved</strong>. Find it later under <strong>Resolved</strong>.
         </p>
         <p>
-          <strong>3. Hashes:</strong> Click any observables row or right-click a compromise event row to see full
-          SHA-256 and copy it.
+          <strong>3. Hashes / IOC search:</strong> Use the top search bar for partial SHA-256 (for example{" "}
+          <code>ae12bb54</code> (Lumma) or <code>f712b4e1</code> (SocGholish)) or IPs like <code>172.20.2.58</code> /{" "}
+          <code>10.109.0.61</code>. Open Events on a host for full hashes and Talos / VT pivots.
         </p>
         <p>
           <strong>4. Events drill-down:</strong> Expand an incident and click <strong>Events</strong> for a full table

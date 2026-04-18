@@ -5,9 +5,15 @@ export const XDR_SIR_BY_INCIDENT_ID: Record<string, IncidentXdrSir> = {
   "inc-1": {
     sirId: "SIR0017192",
     sirTitle: "Malicious IPs and Domains observed by MS-ISAC — BGAUpdate dropper cluster",
+    xdrTitle: "New suspicious execution — MdUsman / MSILHeracles + public Lumma hash",
+    xdrPriority: 870,
+    xdrState: "New",
+    xdrTactics: ["Initial Access", "Execution", "Command and Control"],
+    xdrBlurb:
+      "Connector flagged gen:Variant.MSILHeracles.75067 on a GUID-renamed BGAUpdate.exe with repeated quarantine failures. Treat as potential commodity loader until scan + trajectory review complete.",
     msisacFeedId: "MS-ISAC-2025-EDU-AMP-0142",
     sectorContext:
-      "Higher-ed WFH cohort: commodity updater masquerading as browser game assistant (BGAUpdate.exe) with staged PowerShell from Temp. Correlates with sector-wide ISO→lnk campaigns.",
+      "Data Group institute WFH cohort: commodity updater masquerading as browser game assistant (BGAUpdate.exe) with staged PowerShell from Temp. Correlates with sector-wide ISO→lnk campaigns.",
     firstSeenUtc: "2025-03-18T08:00:00.000Z",
     lastObservedUtc: "2025-03-24T22:38:11.000Z",
     narrative:
@@ -28,12 +34,17 @@ export const XDR_SIR_BY_INCIDENT_ID: Record<string, IncidentXdrSir> = {
     ],
     ttps: ["T1566.001 (Spearphishing Attachment)", "T1059.001 (PowerShell)", "T1071.001 (Web Protocols)"],
     relatedIntelNote:
-      "Talos: Blog 2024-xx “Fake game patches” — same file family. VirusTotal: community score 54/72 on primary hash from this host.",
+      "Primary file hash matches public Lumma stealer corpus (ae12bb54…) — have students verify live on VirusTotal; adware second-stage uses 142b638c… (typically fewer engines).",
   },
 
   "inc-2": {
     sirId: "SIR0018401",
     sirTitle: "UNC path lateral movement — FacStaff laptop with stale VPN profile",
+    xdrTitle: "UNC staging share — JONE-ATH-B2240",
+    xdrPriority: 670,
+    xdrState: "New",
+    xdrTactics: ["Lateral Movement", "Defense Evasion"],
+    xdrBlurb: "Signed-but-revoked DLL pulled from an internal UNC share; review VPN split-tunnel and SMB session reuse.",
     msisacFeedId: "MS-ISAC-2025-SMB-LAT-0098",
     sectorContext:
       "UNC path \\\\JONE-ATH-B2240\\public\\staging observed in peer alerts; overlaps with stolen NTLM relay lab used in spring phishing sim.",
@@ -185,6 +196,11 @@ export const XDR_SIR_BY_INCIDENT_ID: Record<string, IncidentXdrSir> = {
   "inc-8": {
     sirId: "SIR0019003",
     sirTitle: "DMZ IIS — ASP.NET webshell with POST to rare China VPS (simulated attribution)",
+    xdrTitle: "Webshell on DMZ IIS — WEB-APP-01",
+    xdrPriority: 910,
+    xdrState: "New",
+    xdrTactics: ["Initial Access", "Persistence", "Impact"],
+    xdrBlurb: "Critical webshell under w3wp.exe — assume breach tabletop; correlate WAF and endpoint trajectory.",
     msisacFeedId: "MS-ISAC-2025-WEB-DMZ-0221",
     sectorContext: "Lab DMZ web server; MS-ISAC notes webshell SHA tied to AS4134-like VPS 45.33.32.156 in student exercises only.",
     firstSeenUtc: "2025-03-15T10:00:00.000Z",
@@ -202,6 +218,57 @@ export const XDR_SIR_BY_INCIDENT_ID: Record<string, IncidentXdrSir> = {
     dnsQueriesSample: ["upload-cdn.site", "shell-backup.azureedge.invalid"],
     ttps: ["T1505.003 (Web Shell)", "T1078", "T1048 (Exfiltration Over Alternative Protocol)"],
     relatedIntelNote: "WAF virtual patch rule WAF-DMZ-14 would block this path — discuss compensating controls.",
+  },
+
+  "inc-polc": {
+    sirId: "SIR0019007",
+    sirTitle: "FacStaff endpoint — Simple_Custom_Detection + quarantine outcome mismatch",
+    msisacFeedId: "MS-ISAC-2024-EDU-AMP-EVENTS-DRILL",
+    sectorContext: "Classic teaching set: File Detection, Quarantine Failed, then Quarantine Succeeded on loader.js hash.",
+    firstSeenUtc: "2024-04-01T04:16:00.000Z",
+    lastObservedUtc: "2024-04-01T19:09:04.000Z",
+    narrative:
+      "POLC-MJ0LQLRR shows the same SHA-256 for loader.js with one failed then successful quarantine attempt — use this row to explain race conditions and policy precedence in class.",
+    maliciousIpv4: [
+      { ip: "203.0.113.201", context: "HTTPS callback observed from wscript child", firstSeenUtc: "2024-04-01T04:16:37.000Z" },
+      { ip: "192.0.2.88", context: "Staging host for suspicious_payload.bin", firstSeenUtc: "2024-04-01T04:16:39.000Z" },
+    ],
+    maliciousDomains: [
+      { domain: "stage-cdn.lab-datagroup.invalid", context: "Loader pulls second stage", observedVia: "HTTPS SNI" },
+    ],
+    dnsQueriesSample: ["stage-cdn.lab-datagroup.invalid", "telemetry.faculty.datagroup.lab"],
+    ttps: ["T1059.007 (JavaScript)", "T1204.002 (Malicious File)", "T1562.001 (Disable or Modify Tools)"],
+    relatedIntelNote: "Search AMP global bar for f712b4e1 (SocGholish) or 10.3.0.215 — ties to this host.",
+    xdrTitle: "Custom detection hits — POLC-MJ0LQLRR",
+    xdrPriority: 820,
+    xdrState: "New",
+    xdrTactics: ["Execution", "Defense Evasion", "Command and Control"],
+    xdrBlurb: "Medium-severity cluster: Simple_Custom_Detection fired; one quarantine failure then success on loader.js.",
+  },
+
+  "inc-xdr-ssh": {
+    sirId: "SIR0018700",
+    sirTitle: "New Remote Access on 10.109.0.61 — first-seen SSH sources",
+    msisacFeedId: "MS-ISAC-2024-ACCESS-SSH-DRILL",
+    sectorContext: "Institute file server; analytics compares historical SSH peers and flags new external origins.",
+    firstSeenUtc: "2024-04-01T02:35:00.000Z",
+    lastObservedUtc: "2024-04-01T02:40:35.000Z",
+    narrative:
+      "Device 10.109.0.61 accepted SSH from 111.237.111.214 and opened TLS to 108.140.103.28 shortly after — graph this in XDR as potential tunnel or exfil prep (training scenario only).",
+    maliciousIpv4: [
+      { ip: "111.237.111.214", context: "First-seen inbound SSH — no prior asset relationship", firstSeenUtc: "2024-04-01T02:40:31.000Z" },
+      { ip: "108.140.103.28", context: "Outbound TLS immediately after login burst", firstSeenUtc: "2024-04-01T02:40:35.000Z" },
+    ],
+    maliciousDomains: [{ domain: "pastebin-anon.invalid", context: "Possible C2 config paste (simulated)", observedVia: "Proxy log" }],
+    dnsQueriesSample: ["pastebin-anon.invalid", "update.azureedge-test.invalid"],
+    ttps: ["T1021.004 (SSH)", "T1071.001 (Web Protocols)", "T1048 (Exfiltration)"],
+    relatedIntelNote: "Practice pivots: search 10.109.0.61, 111.237.111.214, or 108.140.103.28 in the AMP/XDR search bar.",
+    xdrTitle: "New Remote Access on 10.109.0.61",
+    xdrPriority: 870,
+    xdrState: "New",
+    xdrTactics: ["Initial Access", "Defense Evasion", "Command and Control"],
+    xdrBlurb:
+      "Device has been accessed from a remote host for the first time in recent history. Validate jump-box inventory vs. rogue SSH.",
   },
 
   "inc-res-1": {

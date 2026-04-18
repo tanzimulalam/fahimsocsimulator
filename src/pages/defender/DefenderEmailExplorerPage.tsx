@@ -20,6 +20,22 @@ type PivotKey =
   | "urlDomainPath";
 
 const EMAIL_STATE_KEY = "defenderEmailLabState";
+const BLOCKED_DOMAINS_KEY = "defenderBlockedDomainsV1";
+
+function senderDomain(sender: string): string {
+  return (sender.split("@")[1] ?? "").toLowerCase();
+}
+
+function loadBlockedDomains(): string[] {
+  try {
+    const raw = localStorage.getItem(BLOCKED_DOMAINS_KEY);
+    if (!raw) return [];
+    const p = JSON.parse(raw) as unknown;
+    return Array.isArray(p) ? p.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
 
 export function DefenderEmailExplorerPage() {
   const { addNotification, incidents } = useSimulator();
@@ -33,15 +49,26 @@ export function DefenderEmailExplorerPage() {
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("2026-01-01");
   const [dateTo, setDateTo] = useState("2026-04-30");
+  const [blockedDomains, setBlockedDomains] = useState<string[]>(() => loadBlockedDomains());
+
   const [mails, setMails] = useState<MailRecord[]>(() => {
     const raw = localStorage.getItem(EMAIL_STATE_KEY);
-    if (!raw) return BASE_PHISHING_EMAILS;
-    try {
-      const parsed = JSON.parse(raw) as MailRecord[];
-      return Array.isArray(parsed) && parsed.length ? parsed : BASE_PHISHING_EMAILS;
-    } catch {
-      return BASE_PHISHING_EMAILS;
-    }
+    const base = (() => {
+      if (!raw) return BASE_PHISHING_EMAILS;
+      try {
+        const parsed = JSON.parse(raw) as MailRecord[];
+        return Array.isArray(parsed) && parsed.length ? parsed : BASE_PHISHING_EMAILS;
+      } catch {
+        return BASE_PHISHING_EMAILS;
+      }
+    })();
+    const blocked = loadBlockedDomains();
+    if (blocked.length === 0) return base;
+    return base.map((m) =>
+      blocked.includes(senderDomain(m.sender))
+        ? { ...m, deliveryAction: "Blocked", location: "Quarantine" as const }
+        : m
+    );
   });
   const [activeMailId, setActiveMailId] = useState(BASE_PHISHING_EMAILS[0]?.id ?? "");
 
@@ -52,6 +79,9 @@ export function DefenderEmailExplorerPage() {
     return mails.filter((m) => {
       const inDate = m.date >= dateFrom && m.date <= dateTo;
       if (!inDate) return false;
+      if (view === "malware" && m.threat !== "Malware") return false;
+      if (view === "phish" && m.threat !== "Phish") return false;
+      if (view === "benign" && m.threat !== "Clean" && m.threat !== "Spam") return false;
       if (!q) return true;
       return (
         m.firstName.toLowerCase().includes(q) ||
@@ -59,12 +89,17 @@ export function DefenderEmailExplorerPage() {
         m.sender.toLowerCase().includes(q) ||
         m.recipient.toLowerCase().includes(q) ||
         m.subject.toLowerCase().includes(q) ||
+        m.body.toLowerCase().includes(q) ||
+        m.suspiciousUrl.toLowerCase().includes(q) ||
         m.date.includes(q)
       );
     });
-  }, [mails, search, dateFrom, dateTo]);
+  }, [mails, search, dateFrom, dateTo, view]);
 
-  const explorerRows = useMemo(() => filtered.filter((m) => m.location !== "Quarantine"), [filtered]);
+  const explorerRows = useMemo(
+    () => filtered.filter((m) => m.location !== "Quarantine" && m.location !== "Deleted"),
+    [filtered]
+  );
   const quarantineRows = useMemo(() => filtered.filter((m) => m.location === "Quarantine"), [filtered]);
   const trashRows = useMemo(() => mails.filter((m) => m.location === "Deleted"), [mails]);
   const totalItems = filtered.length;
@@ -76,8 +111,12 @@ export function DefenderEmailExplorerPage() {
       const n = Number(id.replace("m", "")) || 1;
       return `203.0.113.${10 + ((n * 7) % 120)}`;
     };
-    const detectTech = (m: MailRecord) =>
-      m.threat === "Malware" ? "URL detonation" : m.reason.includes("domain") ? "Anti-phishing" : "EDR behavioral";
+    const detectTech = (m: MailRecord) => {
+      if (m.threat === "Malware") return "URL detonation";
+      if (m.threat === "Clean") return "Safe attachments";
+      if (m.threat === "Spam") return "Bulk complaint";
+      return m.reason.includes("domain") ? "Anti-phishing" : "EDR behavioral";
+    };
     const urlPath = (u: string) => u.replace(/^https?:\/\//, "");
     const pick = (m: MailRecord): string => {
       if (pivot === "senderDomain") return toDomain(m.sender);
@@ -103,8 +142,14 @@ export function DefenderEmailExplorerPage() {
   }, [mails]);
 
   useEffect(() => {
+    localStorage.setItem(BLOCKED_DOMAINS_KEY, JSON.stringify(blockedDomains));
+  }, [blockedDomains]);
+
+  useEffect(() => {
     function restoreAll() {
       setMails(BASE_PHISHING_EMAILS);
+      setBlockedDomains([]);
+      localStorage.removeItem(BLOCKED_DOMAINS_KEY);
       setActiveMailId(BASE_PHISHING_EMAILS[0]?.id ?? "");
       addNotification("Class scenario", "All phishing emails restored to baseline.");
     }
@@ -126,7 +171,43 @@ export function DefenderEmailExplorerPage() {
     setMails((prev) =>
       prev.map((m) => (m.id === id ? { ...m, location: "Deleted", deliveryAction: "Junked" } : m))
     );
-    addNotification("Quarantine", "Email deleted and moved to trash.");
+    addNotification("Message action", "Email soft-deleted — removed from Explorer list (simulated Microsoft 365).");
+  }
+
+  function moveToJunk(id: string) {
+    setMails((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, location: "Junk", deliveryAction: "Junked" } : m))
+    );
+    addNotification("Message action", "Moved to Junk Email folder for the recipient (simulated).");
+  }
+
+  function blockSenderForMail(mail: MailRecord) {
+    const d = senderDomain(mail.sender);
+    if (!d) {
+      addNotification("Block sender", "Could not parse sender domain.");
+      return;
+    }
+    setBlockedDomains((prev) => [...new Set([...prev, d])]);
+    setMails((prev) =>
+      prev.map((m) =>
+        senderDomain(m.sender) === d ? { ...m, deliveryAction: "Blocked", location: "Quarantine" as const } : m
+      )
+    );
+    addNotification("Tenant block", `Sender domain blocked: ${d} — future messages will be held (simulated).`);
+  }
+
+  function zapZeroHour(id: string) {
+    const mail = mails.find((m) => m.id === id);
+    if (!mail) return;
+    const d = senderDomain(mail.sender);
+    setMails((prev) =>
+      prev.map((m) =>
+        senderDomain(m.sender) === d || m.sender === mail.sender
+          ? { ...m, location: "Deleted" as const, deliveryAction: "Blocked" }
+          : m
+      )
+    );
+    addNotification("ZAP", `Zero-hour auto purge ran for messages from ${mail.sender} (simulated).`);
   }
 
   function markReleased(id: string) {
@@ -155,8 +236,8 @@ export function DefenderEmailExplorerPage() {
       recipient: mail.recipient,
       createdAt: Date.now(),
       status: "Pending actions",
-      severity: mail.threat === "Malware" ? "High" : "Medium",
-      verdict: mail.threat === "Malware" ? "Malicious" : "Suspicious",
+      severity: mail.threat === "Malware" ? "High" : mail.threat === "Phish" ? "Medium" : "Low",
+      verdict: mail.threat === "Malware" ? "Malicious" : mail.threat === "Phish" ? "Suspicious" : "Clean",
       graphNodes: [mail.subject, mail.sender, mail.recipient, mail.suspiciousUrl, mail.attachment],
       evidence: [`URL: ${mail.suspiciousUrl}`, `Attachment: ${mail.attachment}`, `Reason: ${mail.reason}`],
       actions: [
@@ -186,16 +267,21 @@ export function DefenderEmailExplorerPage() {
     <div className="def-page">
       <h1>Email & collaboration - Explorer</h1>
       <div className="def-tabs" style={{ marginBottom: 8 }}>
-        {["All email", "Malware", "Phish", "Campaigns", "Content Malware", "URL clicks"].map((t) => (
-          <button
-            key={t}
-            type="button"
-            className={"btn" + ((view === t.toLowerCase().split(" ")[0]) ? " btn-primary" : "")}
-            onClick={() => setView(t.toLowerCase().split(" ")[0])}
-          >
-            {t}
-          </button>
-        ))}
+        <button type="button" className={"btn" + (view === "all" ? " btn-primary" : "")} onClick={() => setView("all")}>
+          All email
+        </button>
+        <button type="button" className={"btn" + (view === "malware" ? " btn-primary" : "")} onClick={() => setView("malware")}>
+          Malware
+        </button>
+        <button type="button" className={"btn" + (view === "phish" ? " btn-primary" : "")} onClick={() => setView("phish")}>
+          Phish
+        </button>
+        <button type="button" className={"btn" + (view === "benign" ? " btn-primary" : "")} onClick={() => setView("benign")}>
+          Benign / FP drill
+        </button>
+        <button type="button" className="btn" onClick={() => addNotification("Campaigns", "Campaign lens (simulated).")}>
+          Campaigns
+        </button>
       </div>
       <div className="def-toolbar">
         <label className="filter-check">
@@ -204,6 +290,7 @@ export function DefenderEmailExplorerPage() {
             <option value="all">All email</option>
             <option value="malware">Malware</option>
             <option value="phish">Phish</option>
+            <option value="benign">Benign / FP drill</option>
           </select>
         </label>
         <button type="button" className="btn" onClick={() => addNotification("Filter", "Sender filter opened.")}>Sender</button>
@@ -232,7 +319,9 @@ export function DefenderEmailExplorerPage() {
           To
           <input className="def-search-inline" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
         </label>
-        <small className="dash-muted">Dataset: {mails.length} phishing training emails (Jan-Apr 2026)</small>
+        <small className="dash-muted">
+          Dataset: {mails.length} messages · Blocked sender domains: {blockedDomains.length}
+        </small>
       </div>
 
       <div className="panel" style={{ marginBottom: 12 }}>
@@ -296,6 +385,9 @@ export function DefenderEmailExplorerPage() {
                   <td>
                     <button type="button" className="link-btn" onClick={() => openPreview(m.id)}>Preview</button>{" "}
                     <button type="button" className="link-btn" onClick={() => openTrace(m.id)}>Trace</button>{" "}
+                    <button type="button" className="link-btn" onClick={() => moveToJunk(m.id)}>Junk</button>{" "}
+                    <button type="button" className="link-btn" onClick={() => blockSenderForMail(m)}>Block sender</button>{" "}
+                    <button type="button" className="link-btn" onClick={() => zapZeroHour(m.id)}>ZAP</button>{" "}
                     <button type="button" className="link-btn" onClick={() => markDeleted(m.id)}>Delete</button>
                   </td>
                 </tr>
@@ -319,6 +411,8 @@ export function DefenderEmailExplorerPage() {
                   <td>
                     <button type="button" className="link-btn" onClick={() => markReleased(m.id)}>Release</button>{" "}
                     <button type="button" className="link-btn" onClick={() => markDeleted(m.id)}>Delete</button>{" "}
+                    <button type="button" className="link-btn" onClick={() => blockSenderForMail(m)}>Block sender</button>{" "}
+                    <button type="button" className="link-btn" onClick={() => zapZeroHour(m.id)}>ZAP</button>{" "}
                     <button type="button" className="link-btn" onClick={() => openPreview(m.id)}>Preview</button>{" "}
                     <button type="button" className="link-btn" onClick={() => openTrace(m.id)}>Trace</button>
                   </td>
@@ -344,8 +438,15 @@ export function DefenderEmailExplorerPage() {
 
         <div className="panel" style={{ marginBottom: 10 }}>
           <div className="panel-h">Email body (simulated)</div>
+          {activeMail?.practiceBenign ? (
+            <p className="dash-muted" style={{ marginTop: 0 }}>
+              <strong>Class hint:</strong> treat as false-positive drill — compare authentication headers and URL host to phishing templates.
+            </p>
+          ) : null}
           <div style={{ background: "#0f1116", border: "1px solid #2a2f38", borderRadius: 6, padding: 12 }}>
-            <p style={{ marginTop: 0 }}>Hi Bob,</p>
+            <p style={{ marginTop: 0 }}>
+              Hi {activeMail?.firstName ?? "analyst"},
+            </p>
             <p>{activeMail?.body}</p>
             <p><strong>Act now:</strong> this request is marked urgent and time-sensitive.</p>
             <p>
@@ -365,6 +466,18 @@ export function DefenderEmailExplorerPage() {
             onClick={() => startInvestigation(activeMailId)}
           >
             Start investigation
+          </button>
+          <button type="button" className="btn" onClick={() => activeMail && moveToJunk(activeMail.id)}>
+            Move to Junk
+          </button>
+          <button type="button" className="btn" onClick={() => activeMail && blockSenderForMail(activeMail)}>
+            Block sender
+          </button>
+          <button type="button" className="btn" onClick={() => zapZeroHour(activeMailId)}>
+            ZAP (purge similar)
+          </button>
+          <button type="button" className="btn" onClick={() => activeMail && markDeleted(activeMail.id)}>
+            Delete message
           </button>
           <button
             type="button"

@@ -2,12 +2,15 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import type { Incident, IncidentStatus, IncidentWork } from "../types";
 import { INITIAL_INCIDENTS } from "../data/mockData";
+import { collectThreatHashesForScanLog, resolveScanOutcome } from "../lib/scanOutcome";
 
 const DEFAULT_WORK: IncidentWork = {
   scan: { status: "idle" },
@@ -85,6 +88,10 @@ const RESPONSE_ACTIONS_KEY = "socResponseActionsV1";
 
 export function SimulatorProvider({ children }: { children: ReactNode }) {
   const [incidents, setIncidents] = useState<Incident[]>(() => cloneIncidents());
+  const incidentsRef = useRef(incidents);
+  useEffect(() => {
+    incidentsRef.current = incidents;
+  }, [incidents]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -137,6 +144,13 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
         const startedAt = Date.now();
         const delay = mode === "full" ? 4200 : 1600;
         window.setTimeout(() => {
+          const inc = incidentsRef.current.find((i) => i.id === incidentId);
+          let outcome = resolveScanOutcome(inc, mode);
+          let pendingThreatHashes = outcome === "threats_found" ? collectThreatHashesForScanLog(inc) : undefined;
+          if (outcome === "threats_found" && (!pendingThreatHashes || pendingThreatHashes.length === 0)) {
+            outcome = "clean";
+            pendingThreatHashes = undefined;
+          }
           setIncidentWork((p) => {
             const c = p[incidentId] ?? DEFAULT_WORK;
             return {
@@ -144,20 +158,30 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
               [incidentId]: {
                 ...c,
                 scan: {
-                  status: "clean",
+                  status: outcome,
                   mode,
                   startedAt,
                   completedAt: Date.now(),
+                  pendingThreatHashes,
                 },
               },
             };
           });
-          addNotification(
-            "Scan complete",
-            mode === "full"
-              ? "Full scan finished — clean. Open Events to see “clean scan” log lines."
-              : "Flash scan finished — quick check clean. Open Events for details."
-          );
+          if (outcome === "clean") {
+            addNotification(
+              "Scan complete",
+              mode === "full"
+                ? "Full scan finished — clean. Open Events to see “clean scan” log lines."
+                : "Flash scan finished — quick check clean. Open Events for details."
+            );
+          } else {
+            addNotification(
+              "Scan complete — threats remain",
+              mode === "full"
+                ? "Full scan finished but malicious or suspicious objects are still reported. Open Events for post-scan lines and pivot hashes on VirusTotal."
+                : "Flash scan still sees active threat objects — run a full scan or escalate containment (simulated)."
+            );
+          }
         }, delay);
         return {
           ...prev,
@@ -225,6 +249,7 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetAll = useCallback(() => {
+    // Does not touch instructor notepad (socNotepadEditorHtml / socNotepadTemplates) or Defender email lab keys.
     setIncidents(cloneIncidents());
     setIncidentWork({});
     setSelectedIds(new Set());

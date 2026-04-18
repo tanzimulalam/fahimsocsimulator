@@ -54,7 +54,7 @@ export default function App() {
     const saved = sessionStorage.getItem("socRole");
     if (saved === "admin") {
       setRole("admin");
-      setSession({ role: "admin", name: "FahimAdmin" });
+      setSession({ role: "admin", name: "Fahim" });
     }
     if (saved === "student") {
       const studentId = sessionStorage.getItem("socStudentId");
@@ -69,10 +69,10 @@ export default function App() {
   }, []);
 
   function login(username: string, password: string) {
-    if (username === "FahimAdmin" && password === "F123456f@%%") {
+    if (username === "Fahim" && password === "F123456f@%%") {
       sessionStorage.setItem("socRole", "admin");
       setRole("admin");
-      setSession({ role: "admin", name: "FahimAdmin" });
+      setSession({ role: "admin", name: "Fahim" });
       return true;
     }
     if (username === "FahimStudent" && password === "F123456f@%") {

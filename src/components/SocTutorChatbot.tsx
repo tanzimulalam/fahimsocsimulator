@@ -31,8 +31,13 @@ function answerFor(question: string, path: string): string {
   return "Good question. In this lab, explain your decision using: severity, confidence, prevalence, behavior, and blast radius. Then take the least risky action that still contains the threat.";
 }
 
+function parseChatContent(data: unknown): string | null {
+  const d = data as { choices?: Array<{ message?: { content?: string } }> };
+  return d.choices?.[0]?.message?.content?.trim() ?? null;
+}
+
 export function SocTutorChatbot() {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
+  const tutorApiUrl = (import.meta.env.VITE_TUTOR_API_URL as string | undefined)?.trim();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,41 +51,61 @@ export function SocTutorChatbot() {
     return "Context: AMP";
   }, [location.pathname]);
 
+  const transportHint = useMemo(() => {
+    if (tutorApiUrl) return "Tutor: live (HTTPS proxy)";
+    if (import.meta.env.DEV) return "Tutor: live (dev proxy) — use OPENAI_API_KEY or VITE_OPENAI_API_KEY in .env";
+    return "Tutor: offline — browsers cannot call OpenAI directly; set GitHub Variable VITE_TUTOR_API_URL to your Worker URL (see README)";
+  }, [tutorApiUrl]);
+
   async function askOnline(question: string): Promise<string | null> {
-    if (!apiKey) return null;
     const context =
       location.pathname.startsWith("/xdr")
         ? "XDR Investigate workflow, response actions, and IOC triage."
         : location.pathname.startsWith("/defender")
           ? "Microsoft Defender Explorer and Investigations lifecycle."
           : "Cisco AMP incident triage workflow.";
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.3,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a SOC training tutor for AMP, Cisco XDR, and Microsoft Defender labs. Give concise, practical analyst guidance, explain why an action is chosen, and map answers to triage workflows.",
-          },
-          {
-            role: "user",
-            content: `Page context: ${context}\nQuestion: ${question}`,
-          },
-        ],
-      }),
+
+    const body = JSON.stringify({
+      model: "gpt-4o-mini",
+      temperature: 0.3,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a SOC training tutor for AMP, Cisco XDR, and Microsoft Defender labs. Give concise, practical analyst guidance, explain why an action is chosen, and map answers to triage workflows.",
+        },
+        {
+          role: "user",
+          content: `Page context: ${context}\nQuestion: ${question}`,
+        },
+      ],
     });
-    if (!resp.ok) return null;
-    const data = (await resp.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    return data.choices?.[0]?.message?.content?.trim() ?? null;
+
+    // Production (and recommended): HTTPS proxy — OpenAI blocks browser CORS on direct calls.
+    if (tutorApiUrl) {
+      const resp = await fetch(tutorApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      if (!resp.ok) return null;
+      const data = (await resp.json()) as unknown;
+      return parseChatContent(data);
+    }
+
+    // Dev only: Vite proxies /__openai -> api.openai.com with server-side Authorization.
+    if (import.meta.env.DEV) {
+      const resp = await fetch("/__openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      if (!resp.ok) return null;
+      const data = (await resp.json()) as unknown;
+      return parseChatContent(data);
+    }
+
+    return null;
   }
 
   async function send() {
@@ -108,7 +133,10 @@ export function SocTutorChatbot() {
             SOC Tutor Chatbot
             <button type="button" className="modal-close" onClick={() => setOpen(false)} aria-label="Close chatbot">×</button>
           </div>
-          <div className="soc-chat-hint">{pageHint}</div>
+          <div className="soc-chat-hint">
+            {pageHint}
+            <span className="soc-chat-transport"> · {transportHint}</span>
+          </div>
           <div className="soc-chat-body">
             {messages.map((m, i) => (
               <div key={`${m.role}-${i}`} className={`soc-chat-msg ${m.role}`}>

@@ -1227,6 +1227,12 @@ a.xdr-foot-badge:hover {
   background: rgba(245, 159, 0, 0.14);
 }
 
+.xdr-mini-node.asset {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.12);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.25);
+}
+
 .xdr-mini-link {
   width: 40px;
   height: 2px;

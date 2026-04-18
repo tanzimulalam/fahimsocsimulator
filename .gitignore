@@ -2,3 +2,9 @@ node_modules
 dist
 *.local
 .DS_Store
+
+# Secrets — never commit real API keys (use GitHub Actions encrypted secrets for deploy)
+.env
+.env.local
+.env.production
+.env.development

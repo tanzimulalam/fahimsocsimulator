@@ -8,12 +8,14 @@ export type MailRecord = {
   date: string;
   location: "Inbox" | "Junk" | "Deleted" | "Quarantine";
   deliveryAction: "Delivered" | "Junked" | "Blocked" | "Quarantined";
-  threat: "Phish" | "Malware";
+  threat: "Phish" | "Malware" | "Spam" | "Clean";
   reason: string;
   expires: string;
   body: string;
   suspiciousUrl: string;
   attachment: string;
+  /** False-positive drill — message is intentionally boring/safe */
+  practiceBenign?: boolean;
 };
 
 export const BASE_PHISHING_EMAILS: MailRecord[] = [
@@ -37,5 +39,11 @@ export const BASE_PHISHING_EMAILS: MailRecord[] = [
   { id: "m18", firstName: "Logan", lastName: "Baker", sender: "docu-sign@secure-docu-signing.app", recipient: "logan.baker@contoso.com", subject: "Signature required immediately", date: "2026-04-02", location: "Junk", deliveryAction: "Junked", threat: "Phish", reason: "Fake signing portal", expires: "17 days", body: "Sign legal agreement before account lock.", suspiciousUrl: "http://docusign-urgent-signature.team", attachment: "Agreement.htm" },
   { id: "m19", firstName: "Isabella", lastName: "Hill", sender: "service-desk@password-notice365.com", recipient: "isabella.hill@contoso.com", subject: "Password expires today", date: "2026-04-10", location: "Quarantine", deliveryAction: "Blocked", threat: "Phish", reason: "Password scare tactic", expires: "14 days", body: "Password expired. Confirm recovery details now.", suspiciousUrl: "http://password-recover-office365.org", attachment: "None" },
   { id: "m20", firstName: "Ethan", lastName: "Rivera", sender: "project-share@m365-collab-update.net", recipient: "ethan.rivera@contoso.com", subject: "Project files updated", date: "2026-04-17", location: "Deleted", deliveryAction: "Junked", threat: "Malware", reason: "Suspicious executable delivery", expires: "13 days", body: "Download latest sprint package attached.", suspiciousUrl: "http://m365-collab-access.site/open", attachment: "Sprint-Package.exe" },
+  { id: "m21", firstName: "Jordan", lastName: "Lee", sender: "newsletter@library.datagroup.lab", recipient: "jordan.lee@datagroup.lab", subject: "Institute library hours update — spring break", date: "2026-04-01", location: "Inbox", deliveryAction: "Delivered", threat: "Clean", reason: "SPF/DKIM/DMARC pass · internal domain", expires: "—", body: "The institute library will operate reduced hours April 5–9. No attachments.", suspiciousUrl: "https://library.datagroup.lab/hours", attachment: "None", practiceBenign: true },
+  { id: "m22", firstName: "Taylor", lastName: "Nguyen", sender: "noreply@github.com", recipient: "taylor.nguyen@contoso.com", subject: "[GitHub] Security alert resolution", date: "2026-04-03", location: "Inbox", deliveryAction: "Delivered", threat: "Clean", reason: "Known sender · signed notification", expires: "—", body: "A Dependabot alert you were watching was closed. No action required.", suspiciousUrl: "https://github.com/notifications", attachment: "None", practiceBenign: true },
+  { id: "m23", firstName: "Riley", lastName: "Brooks", sender: "soc-instructor@datagroup.lab", recipient: "student01@datagroup.lab", subject: "SOC lab — safe baseline message", date: "2026-04-08", location: "Inbox", deliveryAction: "Delivered", threat: "Clean", reason: "Instructor allow-list (simulated)", expires: "—", body: "This message is intentionally clean. Practice: confirm headers, then mark as not malicious in your notes.", suspiciousUrl: "https://datagroup.lab/soc-baseline", attachment: "None", practiceBenign: true },
+  { id: "m24", firstName: "Casey", lastName: "Morgan", sender: "shipping@tools-northwind.com", recipient: "casey.morgan@contoso.com", subject: "Order #48291 shipped", date: "2026-04-12", location: "Inbox", deliveryAction: "Delivered", threat: "Spam", reason: "Bulk marketing — not phishing", expires: "14 days", body: "Your cordless drill order has shipped. Track with the carrier link.", suspiciousUrl: "https://tools-northwind.com/track/48291", attachment: "None", practiceBenign: true },
+  { id: "m25", firstName: "Alex", lastName: "Rivera", sender: "payroll@datagroup.lab", recipient: "alex.rivera@datagroup.lab", subject: "Direct deposit confirmation (scheduled)", date: "2026-04-14", location: "Inbox", deliveryAction: "Delivered", threat: "Clean", reason: "Look-alike drill: compare to m11 payroll typo domain in Explorer", expires: "—", body: "This is the legitimate payroll notice template. No links require login.", suspiciousUrl: "https://payroll.datagroup.lab/employee", attachment: "None", practiceBenign: true },
+  { id: "m26", firstName: "Sam", lastName: "Patel", sender: "security@microsoft.com", recipient: "sam.patel@contoso.com", subject: "Your Microsoft 365 digest", date: "2026-04-15", location: "Quarantine", deliveryAction: "Quarantined", threat: "Phish", reason: "High volume marketing flagged as bulk (practice: compare headers)", expires: "20 days", body: "Weekly digest of SharePoint activity. If unexpected, review with instructor before release.", suspiciousUrl: "https://office.com/", attachment: "None" },
 ];
 

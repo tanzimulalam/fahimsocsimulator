@@ -24,6 +24,10 @@ export interface CompromiseEvent {
   remotePort?: string;
   direction?: "inbound" | "outbound" | "local";
   relatedUrl?: string;
+  /** AMP / Secure Endpoint detection name when applicable */
+  detectionName?: string;
+  /** Engine shown in Events-style tables */
+  detectionEngine?: string;
 }
 
 export interface HostInfo {
@@ -59,6 +63,13 @@ export interface IncidentXdrSir {
   dnsQueriesSample: string[];
   ttps: string[];
   relatedIntelNote: string;
+  /** XDR Incidents queue — optional overrides for per-case titles */
+  xdrTitle?: string;
+  xdrPriority?: number;
+  xdrState?: "New" | "In progress" | "Resolved";
+  xdrTactics?: string[];
+  /** Short analyst-facing summary on the incident overview */
+  xdrBlurb?: string;
 }
 
 export interface Incident {
@@ -105,6 +116,8 @@ export interface IncidentScanState {
   mode?: "full" | "flash";
   startedAt?: number;
   completedAt?: number;
+  /** When scan ends with threats_found — drives synthetic “post-scan” event rows */
+  pendingThreatHashes?: string[];
 }
 
 export interface AnalystComment {

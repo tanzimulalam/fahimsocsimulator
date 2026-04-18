@@ -6,7 +6,15 @@ import { XdrSirPanel } from "../../components/xdr/XdrSirPanel";
 import { buildInvestigationNodes, sirHeadline, type InvestigationNode } from "../../data/xdrInvestigation";
 import type { Incident } from "../../types";
 import { useSimulator } from "../../context/SimulatorContext";
-import { findIncidentBySha256, normalizeSha256Input, uniqueSha256sFromIncident } from "../../lib/sha256";
+import {
+  findBestIncidentForShaQuery,
+  findIncidentBySha256,
+  findIncidentsBySha256Partial,
+  fullShaFromEvent,
+  normalizeSha256Input,
+  normalizeSha256Partial,
+  uniqueSha256sFromIncident,
+} from "../../lib/sha256";
 import { useClassroom } from "../../context/ClassroomContext";
 
 export function XdrInvestigatePage() {
@@ -92,20 +100,33 @@ export function XdrInvestigatePage() {
 
   function submitShaLookup(e: FormEvent) {
     e.preventDefault();
-    const n = normalizeSha256Input(shaInput);
-    if (!n) {
-      addNotification("SHA-256", "Paste exactly 64 hexadecimal characters (no spaces). Copy from AMP Events or event detail.");
-      return;
-    }
-    const found = findIncidentBySha256(incidents, n);
-    if (!found) {
+    const raw = shaInput.trim();
+    const n = normalizeSha256Input(raw);
+    const part = normalizeSha256Partial(raw);
+    if (!n && (!part || part.length < 8)) {
       addNotification(
-        "No match",
-        "That hash is not on any incident in this simulator. Copy a SHA-256 from an expanded AMP incident row."
+        "SHA-256",
+        "Paste at least 8 hex characters (partial from AMP works) or a full 64-char hash — no spaces."
       );
       return;
     }
-    setSearchParams({ incident: found.id, sha: n });
+    const found = findBestIncidentForShaQuery(incidents, raw);
+    if (!found) {
+      addNotification(
+        "No match",
+        "That hash is not on any incident in this simulator. Try ae12bb54 (Lumma), 275a021b (EICAR), or paste a full SHA-256 from Events."
+      );
+      return;
+    }
+    const multi = part && part.length < 64 ? findIncidentsBySha256Partial(incidents, part).length : 0;
+    if (multi > 1 && part && part.length < 24) {
+      addNotification("Ambiguous", `${multi} incidents share that short fragment — type more characters or pick from Inbox.`);
+    }
+    const matchedHash =
+      n ??
+      (part ? found.events.map((ev) => fullShaFromEvent(ev)).find((h) => h.includes(part)) : undefined) ??
+      "";
+    setSearchParams({ incident: found.id, sha: matchedHash.length === 64 ? matchedHash : "" });
     addNotification("SIR loaded", `${found.xdrSir.sirId} — ${found.hostLine}`);
     setSelected(null);
   }

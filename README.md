@@ -24,7 +24,7 @@ Built for hands-on classroom practice with rich dummy data and interactive analy
 
 - React + TypeScript
 - Vite
-- React Router
+- React Router (`HashRouter` for static hosting — URLs use `#`, e.g. `…/fahimsocsimulator/#/inbox`, so refresh on any route works on GitHub Pages)
 - CSS (custom styling)
 
 ## Run Locally
@@ -45,6 +45,25 @@ Preview production build:
 ```bash
 npm run preview
 ```
+
+## Environment variables (SOC Tutor)
+
+**Why a proxy:** Browsers block direct calls to `api.openai.com` (CORS). Putting `VITE_OPENAI_API_KEY` in the build does **not** make live chat work on the public site. Use a tiny HTTPS proxy that holds your OpenAI key server-side.
+
+### Local development
+
+1. Copy `.env.example` to `.env`.
+2. Set **`OPENAI_API_KEY=sk-...`** (recommended — not embedded in the client) **or** `VITE_OPENAI_API_KEY=...` (used only by the Vite dev proxy).
+3. Run `npm run dev`. The app calls same-origin `/__openai/v1/...`; Vite forwards to OpenAI with your key.
+
+### GitHub Pages (production)
+
+1. Deploy **`workers/tutor-proxy.mjs`** to [Cloudflare Workers](https://developers.cloudflare.com/workers/) (see `wrangler.toml`). Store the API key on the worker: `wrangler secret put OPENAI_API_KEY`.
+2. Note the worker URL, e.g. `https://fahim-soc-tutor.<subdomain>.workers.dev`.
+3. In the GitHub repo: **Settings → Secrets and variables → Actions → Variables** → **New repository variable**. Name: **`VITE_TUTOR_API_URL`**, value: your worker URL (no trailing slash required).
+4. Push or re-run **Deploy to GitHub Pages** so `npm run build` picks up the variable.
+
+`.env` stays **gitignored**; the worker secret lives in Cloudflare, not in the repo.
 
 ## Project Structure
 

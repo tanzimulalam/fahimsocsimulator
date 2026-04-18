@@ -150,7 +150,16 @@ function EventRow({
       <td>
         <span className={"sev " + sevRowClass(ev.severity)}>{ev.severity}</span>
       </td>
-      <td>{ev.eventType}</td>
+      <td>
+        {ev.eventType}
+        {ev.detectionEngine || ev.detectionName ? (
+          <div className="dash-muted tiny" style={{ marginTop: 2 }}>
+            {ev.detectionEngine ? <span>{ev.detectionEngine}</span> : null}
+            {ev.detectionEngine && ev.detectionName ? " · " : null}
+            {ev.detectionName ? <span>{ev.detectionName}</span> : null}
+          </div>
+        ) : null}
+      </td>
       <td className="mono small">{user}</td>
       <td className="mono small">{local}</td>
       <td className="mono small">{remoteCell}</td>

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { NOTEPAD_BODY_KEY, NOTEPAD_TEMPLATES_KEY } from "../constants/storageKeys";
 
 type NoteTemplate = {
   id: string;
@@ -7,7 +8,15 @@ type NoteTemplate = {
   createdAt: string;
 };
 
-const TEMPLATE_KEY = "socNotepadTemplates";
+const DEFAULT_NOTEPAD_HTML = `
+        <h2>Class Notes</h2>
+        <p>Type here like a whiteboard document. Example:</p>
+        <ul>
+          <li>Start with email header review (SPF/DKIM/DMARC).</li>
+          <li>Pivot to URL and sender domain intelligence.</li>
+          <li>Contain, investigate, and restore from quarantine.</li>
+        </ul>
+      `;
 const PRESET_TEMPLATES: Array<{ id: string; name: string; html: string }> = [
   {
     id: "preset-ir",
@@ -63,7 +72,7 @@ export function NotepadPage() {
   const drawing = useRef(false);
   const [markerOn, setMarkerOn] = useState(false);
   const [templates, setTemplates] = useState<NoteTemplate[]>(() => {
-    const raw = localStorage.getItem(TEMPLATE_KEY);
+    const raw = localStorage.getItem(NOTEPAD_TEMPLATES_KEY);
     if (!raw) return [];
     try {
       const parsed = JSON.parse(raw) as NoteTemplate[];
@@ -89,8 +98,32 @@ export function NotepadPage() {
     ctx.lineWidth = 5;
   }, []);
 
+  useLayoutEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    const saved = localStorage.getItem(NOTEPAD_BODY_KEY);
+    el.innerHTML = saved && saved.trim().length > 0 ? saved : DEFAULT_NOTEPAD_HTML.trim();
+  }, []);
+
   useEffect(() => {
-    localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates));
+    const el = editorRef.current;
+    if (!el) return;
+    let t: ReturnType<typeof setTimeout>;
+    const save = () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        localStorage.setItem(NOTEPAD_BODY_KEY, el.innerHTML);
+      }, 500);
+    };
+    el.addEventListener("input", save);
+    return () => {
+      clearTimeout(t);
+      el.removeEventListener("input", save);
+    };
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(NOTEPAD_TEMPLATES_KEY, JSON.stringify(templates));
   }, [templates]);
 
   function toPoint(e: React.MouseEvent<HTMLCanvasElement>) {
@@ -144,10 +177,17 @@ export function NotepadPage() {
     setStatus(`Template "${next.name}" saved.`);
   }
 
+  function persistEditorNow() {
+    const el = editorRef.current;
+    if (!el) return;
+    localStorage.setItem(NOTEPAD_BODY_KEY, el.innerHTML);
+  }
+
   function loadTemplate(id: string) {
     const t = templates.find((x) => x.id === id);
     if (!t || !editorRef.current) return;
     editorRef.current.innerHTML = t.html;
+    persistEditorNow();
     setStatus(`Template "${t.name}" loaded.`);
   }
 
@@ -155,20 +195,14 @@ export function NotepadPage() {
     const t = PRESET_TEMPLATES.find((x) => x.id === id);
     if (!t || !editorRef.current) return;
     editorRef.current.innerHTML = t.html;
+    persistEditorNow();
     setStatus(`Preset "${t.name}" loaded.`);
   }
 
   function resetClassScenario() {
     if (editorRef.current) {
-      editorRef.current.innerHTML = `
-        <h2>Class Notes</h2>
-        <p>Type here like a whiteboard document. Example:</p>
-        <ul>
-          <li>Start with email header review (SPF/DKIM/DMARC).</li>
-          <li>Pivot to URL and sender domain intelligence.</li>
-          <li>Contain, investigate, and restore from quarantine.</li>
-        </ul>
-      `;
+      editorRef.current.innerHTML = DEFAULT_NOTEPAD_HTML.trim();
+      persistEditorNow();
     }
     clearMarks();
     window.dispatchEvent(new Event("defender-email-restore-all"));
@@ -230,15 +264,7 @@ export function NotepadPage() {
             contentEditable
             suppressContentEditableWarning
             spellCheck
-          >
-            <h2>Class Notes</h2>
-            <p>Type here like a whiteboard document. Example:</p>
-            <ul>
-              <li>Start with email header review (SPF/DKIM/DMARC).</li>
-              <li>Pivot to URL and sender domain intelligence.</li>
-              <li>Contain, investigate, and restore from quarantine.</li>
-            </ul>
-          </div>
+          />
           <canvas
             ref={canvasRef}
             className={"notepad-canvas" + (markerOn ? " on" : "")}

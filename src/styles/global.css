@@ -36,6 +36,31 @@ body,
   color: var(--text);
 }
 
+.app-font-splash {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-app);
+  color: var(--text-muted);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+.app-font-splash-inner {
+  text-align: center;
+}
+
+.app-font-splash-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.app-font-splash-sub {
+  font-size: 0.85rem;
+}
+
 body {
   font-family: var(--font);
   font-size: 13px;
@@ -1722,6 +1747,71 @@ button.user-pill:hover {
   font-size: 13px;
 }
 
+.ioc-hit-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.ioc-hit-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: var(--bg-panel);
+}
+
+.ioc-hit-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.ioc-verdict {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.ioc-mal {
+  background: rgba(226, 35, 26, 0.18);
+  color: #ffb4a8;
+}
+
+.ioc-sus {
+  background: rgba(245, 159, 0, 0.16);
+  color: #ffe066;
+}
+
+.ioc-clean {
+  background: rgba(34, 139, 230, 0.14);
+  color: #a5d8ff;
+}
+
+.ioc-hit-amp {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ioc-hit-meta {
+  font-size: 12px;
+  margin: 4px 0;
+  line-height: 1.45;
+}
+
+.ioc-hit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
 .obs-emphasize .badge-count.high {
   box-shadow: 0 0 0 2px rgba(226, 35, 26, 0.45);
 }
@@ -2127,6 +2217,14 @@ button.user-pill:hover {
   font-size: 11px;
   color: var(--text-muted);
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.soc-chat-transport {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  line-height: 1.35;
+  opacity: 0.92;
 }
 
 .soc-chat-body {
