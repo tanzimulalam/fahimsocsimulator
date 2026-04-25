@@ -1,7 +1,9 @@
 import { useClassroom } from "../context/ClassroomContext";
 import { useSimulator } from "../context/SimulatorContext";
+import { useNavigate } from "react-router-dom";
 
 export function StudentDeskPage() {
+  const navigate = useNavigate();
   const { session, scenarios, grades, activities, messages, unseenScenariosForStudent, addStudentActivity } = useClassroom();
   const { addNotification } = useSimulator();
   if (!session || session.role !== "student") return null;
@@ -86,7 +88,10 @@ export function StudentDeskPage() {
                       onClick={() => {
                         addStudentActivity("Scenario opened", s.title);
                         addNotification("Lab Scenario", `Instructor posted: ${s.title}`);
-                        if (s.startPath) window.location.href = s.startPath;
+                        if (s.startPath) {
+                          const target = s.startPath.startsWith("#") ? s.startPath.slice(1) : s.startPath;
+                          navigate(target);
+                        }
                       }}
                     >
                       Start
