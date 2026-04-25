@@ -113,6 +113,10 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
       return [];
     }
   });
+  const responseActionsRef = useRef<ResponseActionRecord[]>(responseActions);
+  useEffect(() => {
+    responseActionsRef.current = responseActions;
+  }, [responseActions]);
 
   useEffect(() => {
     if (!classroomApi.enabled) return;
@@ -196,8 +200,28 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
         const delay = mode === "full" ? 4200 : 1600;
         window.setTimeout(() => {
           const inc = incidentsRef.current.find((i) => i.id === incidentId);
+          const incidentActions = responseActionsRef.current.filter((r) => r.incidentId === incidentId);
+          const hasIsolation = incidentActions.some((r) => r.action === "isolate_host");
+          const blockedHashes = new Set(
+            incidentActions.filter((r) => r.action === "block_sha256").map((r) => r.sha256.toLowerCase())
+          );
           let outcome = resolveScanOutcome(inc, mode);
           let pendingThreatHashes = outcome === "threats_found" ? collectThreatHashesForScanLog(inc) : undefined;
+          if (inc && pendingThreatHashes && pendingThreatHashes.length > 0) {
+            const allThreatHashesBlocked = pendingThreatHashes.every((h) => blockedHashes.has(h.toLowerCase()));
+            if (hasIsolation && allThreatHashesBlocked) {
+              // If students performed full containment in XDR (isolate + block all hashes),
+              // follow-up scans should usually validate clean remediation.
+              outcome = mode === "full" ? "clean" : Math.random() < 0.85 ? "clean" : "threats_found";
+              if (outcome === "clean") pendingThreatHashes = undefined;
+            } else if (hasIsolation && mode === "full" && outcome === "threats_found") {
+              // Isolation alone improves odds but does not guarantee eradication.
+              if (Math.random() < 0.45) {
+                outcome = "clean";
+                pendingThreatHashes = undefined;
+              }
+            }
+          }
           if (outcome === "threats_found" && (!pendingThreatHashes || pendingThreatHashes.length === 0)) {
             outcome = "clean";
             pendingThreatHashes = undefined;

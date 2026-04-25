@@ -546,6 +546,48 @@ const shaNanoSales = anchorsFromFull(SHA256.NANOCORE_RAT);
 const shaHacktoolSales = anchorsFromFull(SHA256.GENERIC_HACKTOOL);
 const shaArechWeb = anchorsFromFull(SHA256.ARECHCLIENT2);
 const shaChromeClean = anchorsFromFull(SHA256.CHROME_INSTALLER);
+const shaEmptyFile = anchorsFromFull(SHA256.EMPTY_FILE);
+const shaNotepad = anchorsFromFull(SHA256.NOTEPAD_WIN10);
+const shaZoom = anchorsFromFull(SHA256.ZOOM_CLIENT);
+const shaUnsExe = anchorsFromFull(SHA256.UNSIGNED_EXE);
+const shaCoinminer = anchorsFromFull(SHA256.COINMINER);
+const shaSocGholish = anchorsFromFull(SHA256.SOCGHOLISH);
+const shaElectrum = anchorsFromFull(SHA256.ELECTRUM_WALLET);
+const shaSodino = anchorsFromFull("0fa207940ea53e2b54a2b769d8ab033a6b2c5e08c78bf4d7dade79849960b54d");
+const shaLockbit = anchorsFromFull("d027f3a41d993665eca328e48794a24ae18c038aa61c2aa76f221e1749e350fd");
+const shaConti = anchorsFromFull("3b0a29823e026456d728b221dedf0345592233aec673f5739d61907aa4cf1aed");
+const shaPoisonIvy = anchorsFromFull("ef537f25c895bfa782526529a9b63d97aa631564d5d789c2b765448c8635fb6c");
+const shaEmotet2 = anchorsFromFull("9001567e2025f83c936b8746fd3b01e44572f70d8ddec39b75b9459f7e5089c8");
+
+function sir(
+  sirId: string,
+  sirTitle: string,
+  firstSeenUtc: string,
+  narrative: string,
+  maliciousIpv4: { ip: string; context: string; firstSeenUtc: string }[],
+  maliciousDomains: { domain: string; context: string; observedVia: string }[],
+  ttps: string[],
+  xdrState: "New" | "In progress" | "Resolved" = "New"
+): Incident["xdrSir"] {
+  return {
+    sirId,
+    sirTitle,
+    msisacFeedId: "MSI-TRAINING",
+    sectorContext: "Education SOC practice",
+    firstSeenUtc,
+    lastObservedUtc: firstSeenUtc,
+    narrative,
+    maliciousIpv4,
+    maliciousDomains,
+    dnsQueriesSample: maliciousDomains.map((d) => d.domain).slice(0, 2),
+    ttps,
+    relatedIntelNote: "Simulated case mapped to public malware / infrastructure references for class drills.",
+    xdrPriority: 870,
+    xdrState,
+    xdrTactics: ["Initial Access", "Execution", "Command and Control"],
+    xdrBlurb: narrative,
+  };
+}
 
 export const INITIAL_INCIDENTS: Incident[] = [
   {
@@ -899,6 +941,186 @@ export const INITIAL_INCIDENTS: Incident[] = [
     events: eventsXdrSsh,
     vulnerabilitiesNote: "XDR-style remote access drill — pivot on 10.109.0.61 and external SSH sources.",
     xdrSir: XDR_SIR_BY_INCIDENT_ID["inc-xdr-ssh"],
+  },
+  {
+    id: "inc-9",
+    status: "requires_attention",
+    hostLine: "FIN-LAPTOP-19.datagroup.local",
+    groupName: "Defender ATP Group FacStaff",
+    eventCount: 3,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "FIN-LAPTOP-19.datagroup.local", internalIp: "10.4.3.19", externalIp: "198.51.100.42", riskScore: 92 },
+    events: [
+      { id: "fin19-1", severity: "high", eventType: "File Detection", sha256Prefix: shaEmotet2.prefix, sha256Suffix: shaEmotet2.suffix, sha256Full: "9001567e2025f83c936b8746fd3b01e44572f70d8ddec39b75b9459f7e5089c8", timestampUtc: "2024-04-11 08:11:14 UTC", filename: "Invoice_April_11.docm", disposition: "Malicious", user: "DATAGROUP\\finance.analyst", processPath: "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE", localIp: "10.4.3.19", remoteIp: "198.51.100.42", remotePort: "443", direction: "outbound", relatedUrl: "https://198.51.100.42/update" },
+      { id: "fin19-2", severity: "medium", eventType: "Quarantine Failure", sha256Prefix: shaEmotet2.prefix, sha256Suffix: shaEmotet2.suffix, sha256Full: "9001567e2025f83c936b8746fd3b01e44572f70d8ddec39b75b9459f7e5089c8", timestampUtc: "2024-04-11 08:11:42 UTC", filename: "Invoice_April_11.docm", disposition: "Unknown", user: "DATAGROUP\\finance.analyst", localIp: "10.4.3.19", remoteIp: "198.51.100.42", remotePort: "443", direction: "outbound" },
+      { id: "fin19-3", severity: "high", eventType: "Suspicious PowerShell", sha256Prefix: shaUnsExe.prefix, sha256Suffix: shaUnsExe.suffix, sha256Full: SHA256.UNSIGNED_EXE, timestampUtc: "2024-04-11 08:12:03 UTC", disposition: "Suspicious", processPath: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", commandLine: "powershell -nop -w hidden -enc <redacted>", user: "DATAGROUP\\finance.analyst", localIp: "10.4.3.19", direction: "local" },
+    ],
+    vulnerabilitiesNote: "Likely malicious macro chain; teach containment before eradication.",
+    xdrSir: sir("SIR-240411-09", "Emotet-style finance lure with outbound C2", "2024-04-11 08:11:14 UTC", "Finance endpoint opened macro lure and started encrypted outbound beaconing.", [{ ip: "198.51.100.42", context: "Known Emotet-style beacon endpoint used in this lab", firstSeenUtc: "2024-04-11 08:11:14 UTC" }], [{ domain: "mail-docs-security-check[.]com", context: "Delivery lure domain", observedVia: "Email telemetry" }], ["T1566.001", "T1059.001", "T1071.001"]),
+  },
+  {
+    id: "inc-10",
+    status: "requires_attention",
+    hostLine: "ENG-WS-77.datagroup.local",
+    groupName: "IT Support Pool",
+    eventCount: 2,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "ENG-WS-77.datagroup.local", internalIp: "10.4.21.77", externalIp: "91.240.118.168", riskScore: 96 },
+    events: [
+      { id: "eng77-1", severity: "critical", eventType: "Ransomware behavior blocked", sha256Prefix: shaLockbit.prefix, sha256Suffix: shaLockbit.suffix, sha256Full: "d027f3a41d993665eca328e48794a24ae18c038aa61c2aa76f221e1749e350fd", timestampUtc: "2024-04-11 09:41:00 UTC", filename: "svc_host_patch.exe", disposition: "Malicious", user: "DATAGROUP\\eng.user", processPath: "C:\\Users\\eng.user\\AppData\\Local\\Temp\\svc_host_patch.exe", localIp: "10.4.21.77", remoteIp: "91.240.118.168", remotePort: "443", direction: "outbound" },
+      { id: "eng77-2", severity: "high", eventType: "Mass file encryption pattern", sha256Prefix: shaLockbit.prefix, sha256Suffix: shaLockbit.suffix, sha256Full: "d027f3a41d993665eca328e48794a24ae18c038aa61c2aa76f221e1749e350fd", timestampUtc: "2024-04-11 09:41:18 UTC", disposition: "Malicious", user: "DATAGROUP\\eng.user", localIp: "10.4.21.77", direction: "local" },
+    ],
+    vulnerabilitiesNote: "Potential ransomware simulation; isolate host immediately then block hash.",
+    xdrSir: sir("SIR-240411-10", "LockBit 3.0 staging and encryption burst", "2024-04-11 09:41:00 UTC", "Endpoint executed binary matching LockBit 3.0-like behavior and attempted external communication.", [{ ip: "91.240.118.168", context: "LockBit-like C2 / exfil endpoint (training IOC)", firstSeenUtc: "2024-04-11 09:41:00 UTC" }], [{ domain: "backup-agent-update[.]com", context: "Payload retrieval domain", observedVia: "DNS telemetry" }], ["T1486", "T1105", "T1027"]),
+  },
+  {
+    id: "inc-11",
+    status: "requires_attention",
+    hostLine: "HR-VDI-12.datagroup.local",
+    groupName: "Defender ATP Group LabClass",
+    eventCount: 2,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "HR-VDI-12.datagroup.local", internalIp: "10.8.5.12", externalIp: "162.244.80.235", riskScore: 89 },
+    events: [
+      { id: "hrvdi12-1", severity: "high", eventType: "Cobalt Strike-like beacon", sha256Prefix: shaConti.prefix, sha256Suffix: shaConti.suffix, sha256Full: "3b0a29823e026456d728b221dedf0345592233aec673f5739d61907aa4cf1aed", timestampUtc: "2024-04-11 10:02:02 UTC", filename: "legitupdate.dll", disposition: "Malicious", processPath: "C:\\Windows\\System32\\rundll32.exe", parentProcess: "C:\\Windows\\explorer.exe", user: "DATAGROUP\\hr.vdi", localIp: "10.8.5.12", remoteIp: "162.244.80.235", remotePort: "443", direction: "outbound" },
+      { id: "hrvdi12-2", severity: "medium", eventType: "Credential dump attempt", sha256Prefix: shaConti.prefix, sha256Suffix: shaConti.suffix, sha256Full: "3b0a29823e026456d728b221dedf0345592233aec673f5739d61907aa4cf1aed", timestampUtc: "2024-04-11 10:03:11 UTC", disposition: "Suspicious", processPath: "C:\\Windows\\System32\\cmd.exe", commandLine: "reg save hklm\\sam sam.save", user: "DATAGROUP\\hr.vdi", localIp: "10.8.5.12", direction: "local" },
+    ],
+    vulnerabilitiesNote: "Potential post-exploitation activity; verify host and identity compromise scope.",
+    xdrSir: sir("SIR-240411-11", "Conti/CobaltStrike style beacon on HR VDI", "2024-04-11 10:02:02 UTC", "HR virtual desktop initiated suspicious beacon and credential-access behavior.", [{ ip: "162.244.80.235", context: "Known training C2 endpoint mapped to Conti workflow", firstSeenUtc: "2024-04-11 10:02:02 UTC" }], [{ domain: "sync-policies-secure[.]net", context: "Stager callback domain", observedVia: "Endpoint telemetry" }], ["T1071.001", "T1003", "T1059.003"]),
+  },
+  {
+    id: "inc-12",
+    status: "requires_attention",
+    hostLine: "IT-JUMPBOX-02.datagroup.local",
+    groupName: "IT Support Pool",
+    eventCount: 2,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "IT-JUMPBOX-02.datagroup.local", internalIp: "10.4.50.44", externalIp: "82.118.21.1", riskScore: 86 },
+    events: [
+      { id: "jump02-1", severity: "high", eventType: "Remote administration tool dropper", sha256Prefix: shaPoisonIvy.prefix, sha256Suffix: shaPoisonIvy.suffix, sha256Full: "ef537f25c895bfa782526529a9b63d97aa631564d5d789c2b765448c8635fb6c", timestampUtc: "2024-04-11 11:16:12 UTC", filename: "monitor_agent.exe", disposition: "Malicious", processPath: "C:\\Users\\itops\\Downloads\\monitor_agent.exe", user: "DATAGROUP\\it.ops", localIp: "10.4.50.44", remoteIp: "82.118.21.1", remotePort: "8443", direction: "outbound" },
+      { id: "jump02-2", severity: "medium", eventType: "Persistence registry modification", sha256Prefix: shaPoisonIvy.prefix, sha256Suffix: shaPoisonIvy.suffix, sha256Full: "ef537f25c895bfa782526529a9b63d97aa631564d5d789c2b765448c8635fb6c", timestampUtc: "2024-04-11 11:16:53 UTC", disposition: "Suspicious", commandLine: "reg add HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v MonitorAgent", user: "DATAGROUP\\it.ops", localIp: "10.4.50.44", direction: "local" },
+    ],
+    vulnerabilitiesNote: "Likely RAT foothold on jumpbox; isolate and rotate privileged credentials.",
+    xdrSir: sir("SIR-240411-12", "Poison Ivy-style RAT activity on IT jumpbox", "2024-04-11 11:16:12 UTC", "Admin jumpbox downloaded suspicious binary and established legacy RAT-like callback.", [{ ip: "82.118.21.1", context: "Poison Ivy style C2 endpoint (training IOC)", firstSeenUtc: "2024-04-11 11:16:12 UTC" }], [{ domain: "helpdesk-updater[.]org", context: "Social-engineering staging", observedVia: "Web proxy logs" }], ["T1053.005", "T1547.001", "T1071.001"]),
+  },
+  {
+    id: "inc-13",
+    status: "requires_attention",
+    hostLine: "OPS-SRV-DB1.datagroup.local",
+    groupName: "Defender ATP Group FacStaff",
+    eventCount: 2,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "OPS-SRV-DB1.datagroup.local", internalIp: "10.109.4.18", externalIp: "203.0.113.114", riskScore: 84 },
+    events: [
+      { id: "db1-1", severity: "high", eventType: "Ransomware precursor", sha256Prefix: shaSodino.prefix, sha256Suffix: shaSodino.suffix, sha256Full: "0fa207940ea53e2b54a2b769d8ab033a6b2c5e08c78bf4d7dade79849960b54d", timestampUtc: "2024-04-11 12:02:20 UTC", filename: "svc_update64.exe", disposition: "Malicious", processPath: "C:\\ProgramData\\svc_update64.exe", user: "NT AUTHORITY\\SYSTEM", localIp: "10.109.4.18", remoteIp: "203.0.113.114", remotePort: "443", direction: "outbound" },
+      { id: "db1-2", severity: "high", eventType: "Shadow copy deletion", sha256Prefix: shaSodino.prefix, sha256Suffix: shaSodino.suffix, sha256Full: "0fa207940ea53e2b54a2b769d8ab033a6b2c5e08c78bf4d7dade79849960b54d", timestampUtc: "2024-04-11 12:02:49 UTC", disposition: "Malicious", commandLine: "vssadmin delete shadows /all /quiet", user: "NT AUTHORITY\\SYSTEM", localIp: "10.109.4.18", direction: "local" },
+    ],
+    vulnerabilitiesNote: "Train students on impact-based prioritization: backup systems + isolation first.",
+    xdrSir: sir("SIR-240411-13", "Sodinokibi-style pre-encryption behavior", "2024-04-11 12:02:20 UTC", "Server showed anti-recovery actions and suspicious update binary execution.", [{ ip: "203.0.113.114", context: "Suspected payload command endpoint", firstSeenUtc: "2024-04-11 12:02:20 UTC" }], [{ domain: "recovery-checkpoint-sync[.]com", context: "Download infrastructure", observedVia: "DNS / HTTP telemetry" }], ["T1490", "T1059.001", "T1105"]),
+  },
+  {
+    id: "inc-14",
+    status: "requires_attention",
+    hostLine: "LAB-STUDENT-09.datagroup.local",
+    groupName: "Defender ATP Group LabClass",
+    eventCount: 2,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "LAB-STUDENT-09.datagroup.local", internalIp: "10.8.3.9", externalIp: "203.0.113.9", riskScore: 31 },
+    events: [
+      { id: "lab09-1", severity: "low", eventType: "Threat Quarantined", sha256Prefix: shaEicar.prefix, sha256Suffix: shaEicar.suffix, sha256Full: SHA256.EICAR, timestampUtc: "2024-04-11 13:15:01 UTC", filename: "eicar.com", disposition: "Malicious", user: "LAB\\student09", localIp: "10.8.3.9", direction: "local" },
+      { id: "lab09-2", severity: "low", eventType: "File Detection", sha256Prefix: shaNotepad.prefix, sha256Suffix: shaNotepad.suffix, sha256Full: SHA256.NOTEPAD_WIN10, timestampUtc: "2024-04-11 13:16:11 UTC", filename: "notepad.exe", disposition: "Clean", user: "LAB\\student09", localIp: "10.8.3.9", direction: "local" },
+    ],
+    vulnerabilitiesNote: "Likely training-generated test artifact; validate before escalating.",
+    xdrSir: sir("SIR-240411-14", "Student EICAR test spillover (likely benign drill)", "2024-04-11 13:15:01 UTC", "Lab endpoint triggered expected EICAR detections during malware-awareness exercise.", [{ ip: "8.8.8.8", context: "DNS resolver (benign)", firstSeenUtc: "2024-04-11 13:15:01 UTC" }], [{ domain: "iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea[.]com", context: "WannaCry kill-switch domain reference for awareness", observedVia: "Threat intel note" }], ["T1204.002"], "In progress"),
+  },
+  {
+    id: "inc-15",
+    status: "requires_attention",
+    hostLine: "MKT-LAPTOP-55.datagroup.local",
+    groupName: "Work from Home Group",
+    eventCount: 2,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "MKT-LAPTOP-55.datagroup.local", internalIp: "172.21.5.55", externalIp: "198.51.100.75", riskScore: 48 },
+    events: [
+      { id: "mkt55-1", severity: "medium", eventType: "Unsigned installer execution", sha256Prefix: shaUnsExe.prefix, sha256Suffix: shaUnsExe.suffix, sha256Full: SHA256.UNSIGNED_EXE, timestampUtc: "2024-04-11 14:00:30 UTC", filename: "ScreenRecorderSetup.exe", disposition: "Suspicious", user: "DATAGROUP\\mkt.user", processPath: "C:\\Users\\mkt.user\\Downloads\\ScreenRecorderSetup.exe", localIp: "172.21.5.55", remoteIp: "1.1.1.1", remotePort: "53", direction: "outbound" },
+      { id: "mkt55-2", severity: "low", eventType: "File Detection", sha256Prefix: shaZoom.prefix, sha256Suffix: shaZoom.suffix, sha256Full: SHA256.ZOOM_CLIENT, timestampUtc: "2024-04-11 14:01:07 UTC", filename: "ZoomInstallerFull.msi", disposition: "Clean", user: "DATAGROUP\\mkt.user", localIp: "172.21.5.55", direction: "local" },
+    ],
+    vulnerabilitiesNote: "Potential false-positive mixed with legitimate software update traffic.",
+    xdrSir: sir("SIR-240411-15", "Mixed software-install telemetry (possible FP)", "2024-04-11 14:00:30 UTC", "Marketing laptop ran unsigned installer but subsequent telemetry resembles normal software install flow.", [{ ip: "1.1.1.1", context: "Cloudflare DNS (benign infrastructure)", firstSeenUtc: "2024-04-11 14:00:30 UTC" }], [{ domain: "download.zoom.us", context: "Legitimate software distribution", observedVia: "Proxy logs" }], ["T1204.002"], "In progress"),
+  },
+  {
+    id: "inc-16",
+    status: "in_progress",
+    hostLine: "FACSTAFF-LT-22.datagroup.local",
+    groupName: "Defender ATP Group FacStaff",
+    eventCount: 2,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "FACSTAFF-LT-22.datagroup.local", internalIp: "10.4.14.22", externalIp: "203.0.113.54", riskScore: 67 },
+    events: [
+      { id: "fac22-1", severity: "medium", eventType: "Drive-by download", sha256Prefix: shaSocGholish.prefix, sha256Suffix: shaSocGholish.suffix, sha256Full: SHA256.SOCGHOLISH, timestampUtc: "2024-04-11 14:33:18 UTC", filename: "browser_update.js", disposition: "Malicious", user: "DATAGROUP\\fac.staff22", processPath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", localIp: "10.4.14.22", remoteIp: "203.0.113.54", remotePort: "443", direction: "outbound", relatedUrl: "https://cdn-browser-update-security[.]com/update.js" },
+      { id: "fac22-2", severity: "medium", eventType: "Quarantine Succeeded", sha256Prefix: shaBumblebee.prefix, sha256Suffix: shaBumblebee.suffix, sha256Full: SHA256.BUMBLEBEE, timestampUtc: "2024-04-11 14:33:52 UTC", filename: "chrome_patch.msi", disposition: "Quarantined", user: "DATAGROUP\\fac.staff22", localIp: "10.4.14.22", direction: "local" },
+    ],
+    vulnerabilitiesNote: "Containment in progress; validate no lateral movement before closing.",
+    xdrSir: sir("SIR-240411-16", "SocGholish to Bumblebee loader chain", "2024-04-11 14:33:18 UTC", "Drive-by update lure likely delivered loader; initial quarantine succeeded but host still under review.", [{ ip: "203.0.113.54", context: "Malvertising update host", firstSeenUtc: "2024-04-11 14:33:18 UTC" }], [{ domain: "cdn-browser-update-security[.]com", context: "Fake browser update domain", observedVia: "Web telemetry" }], ["T1189", "T1204.002", "T1105"], "In progress"),
+  },
+  {
+    id: "inc-17",
+    status: "requires_attention",
+    hostLine: "RESEARCH-VM-08.datagroup.local",
+    groupName: "Defender ATP Group LabClass",
+    eventCount: 2,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "RESEARCH-VM-08.datagroup.local", internalIp: "10.8.4.108", externalIp: "198.51.100.166", riskScore: 73 },
+    events: [
+      { id: "res08-1", severity: "high", eventType: "Unauthorized mining process", sha256Prefix: shaCoinminer.prefix, sha256Suffix: shaCoinminer.suffix, sha256Full: SHA256.COINMINER, timestampUtc: "2024-04-11 15:05:40 UTC", filename: "xmrigsvc.exe", disposition: "Malicious", user: "DATAGROUP\\research.user", processPath: "C:\\ProgramData\\xmrigsvc.exe", localIp: "10.8.4.108", remoteIp: "198.51.100.166", remotePort: "3333", direction: "outbound" },
+      { id: "res08-2", severity: "medium", eventType: "Suspicious scheduled task", sha256Prefix: shaCoinminer.prefix, sha256Suffix: shaCoinminer.suffix, sha256Full: SHA256.COINMINER, timestampUtc: "2024-04-11 15:06:11 UTC", disposition: "Suspicious", commandLine: "schtasks /create /tn UpdaterTelemetry /tr xmrigsvc.exe /sc minute /mo 30", user: "DATAGROUP\\research.user", localIp: "10.8.4.108", direction: "local" },
+    ],
+    vulnerabilitiesNote: "Likely cryptominer persistence; treat as compromise if unauthorized.",
+    xdrSir: sir("SIR-240411-17", "Coinminer persistence and outbound pool traffic", "2024-04-11 15:05:40 UTC", "Research VM showed commodity miner indicators with recurring scheduled task persistence.", [{ ip: "198.51.100.166", context: "Mining pool endpoint (simulated)", firstSeenUtc: "2024-04-11 15:05:40 UTC" }], [{ domain: "pool-miner-check[.]net", context: "Mining pool domain", observedVia: "DNS telemetry" }], ["T1496", "T1053.005", "T1071.001"]),
+  },
+  {
+    id: "inc-18",
+    status: "resolved",
+    hostLine: "ACCT-LAPTOP-03.datagroup.local",
+    groupName: "Defender ATP Group FacStaff",
+    eventCount: 1,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "ACCT-LAPTOP-03.datagroup.local", internalIp: "10.4.3.103", externalIp: "8.8.8.8", riskScore: 18 },
+    events: [
+      { id: "acct03-1", severity: "low", eventType: "False positive cleared — empty placeholder file", sha256Prefix: shaEmptyFile.prefix, sha256Suffix: shaEmptyFile.suffix, sha256Full: SHA256.EMPTY_FILE, timestampUtc: "2024-04-10 07:12:00 UTC", filename: "tmp0.bin", disposition: "Clean", user: "DATAGROUP\\acct.user03", localIp: "10.4.3.103", direction: "local" },
+    ],
+    vulnerabilitiesNote: "Closed as informational / false positive.",
+    xdrSir: sir("SIR-240410-18", "Benign placeholder file triggered signature edge-case", "2024-04-10 07:12:00 UTC", "Analyst validated hash as empty benign file and closed incident.", [{ ip: "8.8.8.8", context: "Google DNS (benign reference)", firstSeenUtc: "2024-04-10 07:12:00 UTC" }], [{ domain: "update.microsoft.com", context: "Legitimate update destination", observedVia: "Network telemetry" }], ["T1071.001"], "Resolved"),
+  },
+  {
+    id: "inc-19",
+    status: "requires_attention",
+    hostLine: "VPN-GW-01.institute.local",
+    groupName: "IT Support Pool",
+    eventCount: 2,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "VPN-GW-01.institute.local", os: "Ubuntu 22.04 LTS", internalIp: "10.109.0.10", externalIp: "198.51.100.180", riskScore: 82 },
+    events: [
+      { id: "vpn01-1", severity: "high", eventType: "Suspicious archive execution", sha256Prefix: shaPetya.prefix, sha256Suffix: shaPetya.suffix, sha256Full: SHA256.PETYA_NOTPETYA, timestampUtc: "2024-04-11 15:42:07 UTC", filename: "vpn_patch.tar.gz", disposition: "Malicious", user: "root", processPath: "/usr/bin/python3", commandLine: "python3 /tmp/install_patch.py", localIp: "10.109.0.10", remoteIp: "203.0.113.71", remotePort: "443", direction: "outbound" },
+      { id: "vpn01-2", severity: "medium", eventType: "Service tamper attempt", sha256Prefix: shaPetya.prefix, sha256Suffix: shaPetya.suffix, sha256Full: SHA256.PETYA_NOTPETYA, timestampUtc: "2024-04-11 15:42:33 UTC", disposition: "Suspicious", commandLine: "systemctl stop vpn-gateway", user: "root", localIp: "10.109.0.10", direction: "local" },
+    ],
+    vulnerabilitiesNote: "Critical infrastructure host; prioritize containment and service continuity.",
+    xdrSir: sir("SIR-240411-19", "Possible NotPetya-style destructive attempt on VPN gateway", "2024-04-11 15:42:07 UTC", "Gateway executed untrusted update archive and attempted service tampering.", [{ ip: "203.0.113.71", context: "Suspicious update mirror", firstSeenUtc: "2024-04-11 15:42:07 UTC" }], [{ domain: "vpn-hotfix-center[.]com", context: "Fake patch source", observedVia: "Download logs" }], ["T1485", "T1490", "T1105"]),
+  },
+  {
+    id: "inc-20",
+    status: "requires_attention",
+    hostLine: "STUDENT-BYOD-17.wifi.local",
+    groupName: "Work from Home Group",
+    eventCount: 2,
+    recordCount: 1,
+    host: { ...hostFahim, hostname: "STUDENT-BYOD-17.wifi.local", internalIp: "172.30.44.17", externalIp: "198.51.100.211", riskScore: 44 },
+    events: [
+      { id: "byod17-1", severity: "medium", eventType: "Wallet application alert", sha256Prefix: shaElectrum.prefix, sha256Suffix: shaElectrum.suffix, sha256Full: SHA256.ELECTRUM_WALLET, timestampUtc: "2024-04-11 16:10:55 UTC", filename: "Electrum-4.4.6.exe", disposition: "Unknown", user: "BYOD\\student17", processPath: "C:\\Users\\student17\\Downloads\\Electrum-4.4.6.exe", localIp: "172.30.44.17", direction: "local" },
+      { id: "byod17-2", severity: "low", eventType: "Cloud sync check", sha256Prefix: shaZoom.prefix, sha256Suffix: shaZoom.suffix, sha256Full: SHA256.ZOOM_CLIENT, timestampUtc: "2024-04-11 16:11:21 UTC", filename: "ZoomInstallerFull.msi", disposition: "Clean", user: "BYOD\\student17", localIp: "172.30.44.17", remoteIp: "1.1.1.1", remotePort: "53", direction: "outbound" },
+    ],
+    vulnerabilitiesNote: "Likely benign software + BYOD policy violation case (teachable FP triage).",
+    xdrSir: sir("SIR-240411-20", "BYOD policy violation with ambiguous wallet installer alert", "2024-04-11 16:10:55 UTC", "Student BYOD endpoint triggered unknown verdict on wallet app with no malicious behavior follow-on.", [{ ip: "1.1.1.1", context: "Public DNS resolver", firstSeenUtc: "2024-04-11 16:10:55 UTC" }], [{ domain: "download.electrum.org", context: "Legitimate wallet distribution", observedVia: "Web telemetry" }], ["T1204.002"], "In progress"),
   },
   {
     id: "inc-res-1",
