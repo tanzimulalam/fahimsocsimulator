@@ -32,7 +32,7 @@ const scenarioNotes: Record<string, string> = {
 
 export function TrainingHqPage() {
   const { incidents, activityLog, addNotification, resetAll, clearActivityLog, addLabIncident, responseActions } = useSimulator();
-  const { session, students, scenarios, activities, publishScenario, gradeStudent, deleteStudent } = useClassroom();
+  const { session, students, scenarios, activities, publishScenario, gradeStudent, deleteStudent, publishInstructorMessage } = useClassroom();
   const [scenario, setScenario] = useState<keyof typeof scenarioNotes>("Phish -> Endpoint -> Lateral");
   const [section, setSection] = useState<"All" | "Section A" | "Section B" | "Section C">("All");
   const [assignees, setAssignees] = useState<Record<string, string>>({});
@@ -46,6 +46,9 @@ export function TrainingHqPage() {
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [gradeScore, setGradeScore] = useState("85");
   const [gradeComment, setGradeComment] = useState("Good workflow and clear evidence trail.");
+  const [msgTitle, setMsgTitle] = useState("Class update");
+  const [msgBody, setMsgBody] = useState("New assignment posted. Start with AMP Inbox, then pivot to XDR Investigate.");
+  const [msgKind, setMsgKind] = useState<"announcement" | "assignment" | "update">("update");
 
   const filteredStudents = useMemo(
     () =>
@@ -226,6 +229,12 @@ export function TrainingHqPage() {
     addNotification("Export", "Gradebook CSV exported.");
   }
 
+  function sendClassMessage() {
+    if (!session || session.role !== "admin") return;
+    publishInstructorMessage({ title: msgTitle, body: msgBody, kind: msgKind }, session.name);
+    addNotification("Student Desk update", `Posted ${msgKind} to student desk feed.`);
+  }
+
   return (
     <div className="page-scroll">
       <div className="page-header">
@@ -387,6 +396,21 @@ export function TrainingHqPage() {
               </label>
               <div className="modal-actions">
                 <button type="button" className="btn btn-primary" onClick={postScenarioToStudents}>Post Scenario to All Students</button>
+              </div>
+              <hr className="notepad-divider" />
+              <h3 style={{ margin: "0 0 8px" }}>Post Instructor Message to Student Desk</h3>
+              <label className="filter-check">
+                Message type
+                <select className="select-like" value={msgKind} onChange={(e) => setMsgKind(e.target.value as "announcement" | "assignment" | "update")}>
+                  <option value="announcement">Announcement</option>
+                  <option value="assignment">Assignment</option>
+                  <option value="update">Update</option>
+                </select>
+              </label>
+              <label className="filter-check">Title <input className="def-search-inline" style={{ width: "100%" }} value={msgTitle} onChange={(e) => setMsgTitle(e.target.value)} /></label>
+              <label className="filter-check">Message <textarea className="analyst-comment-input" value={msgBody} onChange={(e) => setMsgBody(e.target.value)} /></label>
+              <div className="modal-actions">
+                <button type="button" className="btn" onClick={sendClassMessage}>Send to Student Desk</button>
               </div>
             </div>
           </section>

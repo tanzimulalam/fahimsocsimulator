@@ -1428,6 +1428,52 @@ button.user-pill:hover {
   margin-top: 4px;
 }
 
+.student-feed {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.student-feed-item {
+  border: 1px solid var(--border);
+  background: #0f1621;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.student-feed-item h3 {
+  margin: 2px 0 6px;
+  font-size: 14px;
+}
+
+.student-feed-item p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.student-feed-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.student-feed-item.announcement {
+  border-left: 3px solid #388bfd;
+}
+
+.student-feed-item.assignment {
+  border-left: 3px solid #e3b341;
+}
+
+.student-feed-item.update {
+  border-left: 3px solid #3fb950;
+}
+
 .dash-kpi-delta {
   font-size: 11px;
   color: #3fb950;

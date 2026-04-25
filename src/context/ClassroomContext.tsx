@@ -33,15 +33,26 @@ export type StudentActivity = {
   at: number;
 };
 
+export type InstructorMessage = {
+  id: string;
+  title: string;
+  body: string;
+  kind: "announcement" | "assignment" | "update";
+  createdAt: number;
+  createdBy: string;
+};
+
 type ClassroomState = {
   students: StudentProfile[];
   scenarios: LabScenario[];
   activities: StudentActivity[];
+  messages: InstructorMessage[];
   seenScenarioAt: Record<string, number>;
   grades: Record<string, { score: number; comment: string; updatedAt: number }>;
 };
 
 const STORE_KEY = "socClassroomStateV1";
+const MESSAGES_LAB_STATE_KEY = "classroom-instructor-messages";
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -50,7 +61,7 @@ function uid() {
 function loadState(): ClassroomState {
   const raw = localStorage.getItem(STORE_KEY);
   if (!raw) return {
-    students: [], scenarios: [], activities: [], seenScenarioAt: {}, grades: {},
+    students: [], scenarios: [], activities: [], messages: [], seenScenarioAt: {}, grades: {},
   };
   try {
     const p = JSON.parse(raw) as ClassroomState;
@@ -58,12 +69,13 @@ function loadState(): ClassroomState {
       students: p.students ?? [],
       scenarios: p.scenarios ?? [],
       activities: p.activities ?? [],
+      messages: p.messages ?? [],
       seenScenarioAt: p.seenScenarioAt ?? {},
       grades: p.grades ?? {},
     };
   } catch {
     return {
-      students: [], scenarios: [], activities: [], seenScenarioAt: {}, grades: {},
+      students: [], scenarios: [], activities: [], messages: [], seenScenarioAt: {}, grades: {},
     };
   }
 }
@@ -84,6 +96,7 @@ function mergeClassroomState(local: ClassroomState, remote: ClassroomSnapshot): 
     activities: mergeById(local.activities, remote.activities ?? [])
       .sort((a, b) => b.at - a.at)
       .slice(0, 2000),
+    messages: local.messages ?? [],
     seenScenarioAt: { ...local.seenScenarioAt, ...(remote.seenScenarioAt ?? {}) },
     grades: { ...local.grades, ...(remote.grades ?? {}) },
   };
@@ -95,10 +108,12 @@ type Ctx = {
   students: StudentProfile[];
   scenarios: LabScenario[];
   activities: StudentActivity[];
+  messages: InstructorMessage[];
   grades: Record<string, { score: number; comment: string; updatedAt: number }>;
   registerStudent: (name: string) => StudentProfile;
   publishScenario: (data: Omit<LabScenario, "id" | "createdAt" | "createdBy">, by: string) => void;
   addStudentActivity: (action: string, details: string) => void;
+  publishInstructorMessage: (msg: { title: string; body: string; kind: InstructorMessage["kind"] }, by: string) => void;
   gradeStudent: (studentId: string, score: number, comment: string) => void;
   unseenScenariosForStudent: (studentId: string) => LabScenario[];
   markScenariosSeen: (studentId: string) => void;
@@ -121,6 +136,26 @@ export function ClassroomProvider({ children }: { children: ReactNode }) {
       })
       .catch((err) => {
         console.warn("SOC backend unavailable; using local classroom state.", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!classroomApi.enabled) return;
+    let cancelled = false;
+    void classroomApi
+      .getLabState<InstructorMessage[]>("default", MESSAGES_LAB_STATE_KEY)
+      .then((items) => {
+        if (cancelled || !Array.isArray(items)) return;
+        setState((prev) => ({
+          ...prev,
+          messages: mergeById(prev.messages, items).sort((a, b) => b.createdAt - a.createdAt).slice(0, 300),
+        }));
+      })
+      .catch((err) => {
+        console.warn("Failed to load instructor messages.", err);
       });
     return () => {
       cancelled = true;
@@ -166,6 +201,7 @@ export function ClassroomProvider({ children }: { children: ReactNode }) {
       students: state.students,
       scenarios: state.scenarios,
       activities: state.activities,
+      messages: state.messages,
       grades: state.grades,
       registerStudent: (name: string) => {
         const n = name.trim();
@@ -210,6 +246,31 @@ export function ClassroomProvider({ children }: { children: ReactNode }) {
           void classroomApi.addActivity(activity).catch((err) => {
             console.warn("Failed to sync student activity.", err);
           });
+        }
+      },
+      publishInstructorMessage: (msg, by) => {
+        const title = msg.title.trim();
+        const body = msg.body.trim();
+        if (!title || !body) return;
+        const next: InstructorMessage = {
+          id: uid(),
+          title,
+          body,
+          kind: msg.kind,
+          createdAt: Date.now(),
+          createdBy: by,
+        };
+        let mergedMessages: InstructorMessage[] = [];
+        setState((prev) => ({
+          ...prev,
+          messages: (mergedMessages = [next, ...prev.messages].slice(0, 300)),
+        }));
+        if (classroomApi.enabled) {
+          void classroomApi
+            .putLabState("default", MESSAGES_LAB_STATE_KEY, mergedMessages)
+            .catch((err) => {
+              console.warn("Failed to sync instructor message.", err);
+            });
         }
       },
       gradeStudent: (studentId, score, comment) => {
