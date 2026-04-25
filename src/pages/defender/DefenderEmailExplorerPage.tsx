@@ -6,6 +6,7 @@ import { BASE_PHISHING_EMAILS, type MailRecord } from "../../data/defenderEmailL
 import { classroomApi } from "../../lib/apiClient";
 import {
   loadDefenderInvestigations,
+  loadDefenderInvestigationsFromBackend,
   saveDefenderInvestigations,
   shortId,
   type DefenderInvestigation,
@@ -260,7 +261,7 @@ export function DefenderEmailExplorerPage() {
     addNotification("Trash", "Email restored to quarantine for class replay.");
   }
 
-  function startInvestigation(id: string) {
+  async function startInvestigation(id: string) {
     const mail = mails.find((m) => m.id === id);
     if (!mail) return;
     const linked = incidents.find((i) => i.status === "requires_attention" || i.status === "in_progress") ?? incidents[0];
@@ -292,8 +293,10 @@ export function DefenderEmailExplorerPage() {
         { at: Date.now(), event: "Pending actions generated for analyst approval" },
       ],
     };
-    const existing = loadDefenderInvestigations();
-    saveDefenderInvestigations([inv, ...existing].slice(0, 300));
+    const remote = await loadDefenderInvestigationsFromBackend().catch(() => null);
+    const existing = remote ?? loadDefenderInvestigations();
+    const merged = [inv, ...existing.filter((x) => x.id !== inv.id)].slice(0, 300);
+    saveDefenderInvestigations(merged);
     addNotification("Investigation created", `${inv.id} opened for ${mail.subject}`);
     setPreviewOpen(false);
     navigate(`/defender/investigations?investigation=${encodeURIComponent(inv.id)}`);

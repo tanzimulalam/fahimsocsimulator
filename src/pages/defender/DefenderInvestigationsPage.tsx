@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useSimulator } from "../../context/SimulatorContext";
+import { classroomApi } from "../../lib/apiClient";
 import {
   loadDefenderInvestigations,
   loadDefenderInvestigationsFromBackend,
@@ -13,6 +14,7 @@ export function DefenderInvestigationsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const focusId = searchParams.get("investigation") ?? "";
   const [rows, setRows] = useState<DefenderInvestigation[]>(() => loadDefenderInvestigations());
+  const [hydrated, setHydrated] = useState(!classroomApi.enabled);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
@@ -21,7 +23,10 @@ export function DefenderInvestigationsPage() {
       .then((remote) => {
         if (!cancelled && remote) setRows(remote);
       })
-      .catch((err) => console.warn("Failed to load Defender investigations from backend.", err));
+      .catch((err) => console.warn("Failed to load Defender investigations from backend.", err))
+      .finally(() => {
+        if (!cancelled) setHydrated(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -42,8 +47,9 @@ export function DefenderInvestigationsPage() {
   );
 
   useEffect(() => {
+    if (!hydrated) return;
     saveDefenderInvestigations(rows);
-  }, [rows]);
+  }, [rows, hydrated]);
 
   function pick(id: string) {
     setSearchParams({ investigation: id });
@@ -91,7 +97,21 @@ export function DefenderInvestigationsPage() {
       <h1>Investigations</h1>
       <div className="def-toolbar">
         <button type="button" className="btn" onClick={() => addNotification("Export", "Investigation list exported (simulated).")}>Export</button>
-        <button type="button" className="btn" onClick={() => setRows(loadDefenderInvestigations())}>Refresh</button>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            if (!classroomApi.enabled) {
+              setRows(loadDefenderInvestigations());
+              return;
+            }
+            void loadDefenderInvestigationsFromBackend()
+              .then((remote) => setRows(remote ?? loadDefenderInvestigations()))
+              .catch(() => setRows(loadDefenderInvestigations()));
+          }}
+        >
+          Refresh
+        </button>
         <input className="def-search-inline" placeholder="Search by id, subject, sender..." value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
       <div className="grid-top" style={{ gridTemplateColumns: "1fr 1.2fr" }}>
