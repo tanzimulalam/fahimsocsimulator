@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useSimulator } from "../../context/SimulatorContext";
 import {
   loadDefenderInvestigations,
+  loadDefenderInvestigationsFromBackend,
   saveDefenderInvestigations,
   type DefenderInvestigation,
 } from "../../data/defenderInvestigations";
@@ -13,6 +14,18 @@ export function DefenderInvestigationsPage() {
   const focusId = searchParams.get("investigation") ?? "";
   const [rows, setRows] = useState<DefenderInvestigation[]>(() => loadDefenderInvestigations());
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadDefenderInvestigationsFromBackend()
+      .then((remote) => {
+        if (!cancelled && remote) setRows(remote);
+      })
+      .catch((err) => console.warn("Failed to load Defender investigations from backend.", err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const selected = useMemo(
     () => rows.find((r) => r.id === focusId) ?? rows[0] ?? null,

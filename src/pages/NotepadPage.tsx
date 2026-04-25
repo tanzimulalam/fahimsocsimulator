@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NOTEPAD_BODY_KEY, NOTEPAD_TEMPLATES_KEY } from "../constants/storageKeys";
+import { classroomApi } from "../lib/apiClient";
 
 type NoteTemplate = {
   id: string;
@@ -106,13 +107,44 @@ export function NotepadPage() {
   }, []);
 
   useEffect(() => {
+    if (!classroomApi.enabled) return;
+    let cancelled = false;
+    async function loadRemoteNotepad() {
+      try {
+        const [remoteHtml, remoteTemplates] = await Promise.all([
+          classroomApi.getLabState<string>("default", NOTEPAD_BODY_KEY),
+          classroomApi.getLabState<NoteTemplate[]>("default", NOTEPAD_TEMPLATES_KEY),
+        ]);
+        if (cancelled) return;
+        if (typeof remoteHtml === "string" && remoteHtml.trim() && editorRef.current) {
+          editorRef.current.innerHTML = remoteHtml;
+          localStorage.setItem(NOTEPAD_BODY_KEY, remoteHtml);
+        }
+        if (Array.isArray(remoteTemplates)) setTemplates(remoteTemplates);
+      } catch (err) {
+        console.warn("Failed to load notepad from backend.", err);
+      }
+    }
+    void loadRemoteNotepad();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const el = editorRef.current;
     if (!el) return;
     let t: ReturnType<typeof setTimeout>;
     const save = () => {
       clearTimeout(t);
       t = setTimeout(() => {
-        localStorage.setItem(NOTEPAD_BODY_KEY, el.innerHTML);
+        const html = el.innerHTML;
+        localStorage.setItem(NOTEPAD_BODY_KEY, html);
+        if (classroomApi.enabled) {
+          void classroomApi.putLabState("default", NOTEPAD_BODY_KEY, html).catch((err) => {
+            console.warn("Failed to sync notepad body.", err);
+          });
+        }
       }, 500);
     };
     el.addEventListener("input", save);
@@ -124,6 +156,11 @@ export function NotepadPage() {
 
   useEffect(() => {
     localStorage.setItem(NOTEPAD_TEMPLATES_KEY, JSON.stringify(templates));
+    if (classroomApi.enabled) {
+      void classroomApi.putLabState("default", NOTEPAD_TEMPLATES_KEY, templates).catch((err) => {
+        console.warn("Failed to sync notepad templates.", err);
+      });
+    }
   }, [templates]);
 
   function toPoint(e: React.MouseEvent<HTMLCanvasElement>) {
@@ -181,6 +218,11 @@ export function NotepadPage() {
     const el = editorRef.current;
     if (!el) return;
     localStorage.setItem(NOTEPAD_BODY_KEY, el.innerHTML);
+    if (classroomApi.enabled) {
+      void classroomApi.putLabState("default", NOTEPAD_BODY_KEY, el.innerHTML).catch((err) => {
+        console.warn("Failed to sync notepad body.", err);
+      });
+    }
   }
 
   function loadTemplate(id: string) {

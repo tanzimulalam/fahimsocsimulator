@@ -1,3 +1,5 @@
+import { classroomApi } from "../lib/apiClient";
+
 export type DefenderInvestigationAction = {
   id: string;
   label: string;
@@ -40,6 +42,19 @@ export function loadDefenderInvestigations(): DefenderInvestigation[] {
 
 export function saveDefenderInvestigations(items: DefenderInvestigation[]) {
   localStorage.setItem(DEFENDER_INVESTIGATIONS_KEY, JSON.stringify(items));
+  if (classroomApi.enabled) {
+    void classroomApi.putLabState("default", DEFENDER_INVESTIGATIONS_KEY, items).catch((err) => {
+      console.warn("Failed to sync Defender investigations.", err);
+    });
+  }
+}
+
+export async function loadDefenderInvestigationsFromBackend(): Promise<DefenderInvestigation[] | null> {
+  if (!classroomApi.enabled) return null;
+  const items = await classroomApi.getLabState<DefenderInvestigation[]>("default", DEFENDER_INVESTIGATIONS_KEY);
+  if (!Array.isArray(items)) return null;
+  localStorage.setItem(DEFENDER_INVESTIGATIONS_KEY, JSON.stringify(items));
+  return items;
 }
 
 export function shortId(prefix: string) {

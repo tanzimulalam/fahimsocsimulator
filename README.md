@@ -65,6 +65,63 @@ npm run preview
 
 `.env` stays **gitignored**; the worker secret lives in Cloudflare, not in the repo.
 
+## Backend + shared classroom memory
+
+The app can run in two modes:
+
+- **Local-only mode:** if `VITE_API_BASE_URL` is empty, the simulator keeps using browser storage so demos still work.
+- **Shared classroom mode:** if `VITE_API_BASE_URL` points to the Cloudflare Worker, students, scenarios, activity, grades, XDR response actions, AMP lab state, Defender lab state, and instructor notepad state sync through Cloudflare D1.
+
+### Free Cloudflare D1 setup
+
+1. Log in to Cloudflare Wrangler:
+
+```bash
+npx wrangler login
+```
+
+2. Create the small SQLite database:
+
+```bash
+npx wrangler d1 create fahim-soc-classroom
+```
+
+3. Copy the printed `database_id` into `wrangler.toml`.
+
+4. Apply the schema:
+
+```bash
+npx wrangler d1 migrations apply fahim-soc-classroom --remote
+```
+
+5. Deploy the Worker:
+
+```bash
+npx wrangler deploy
+```
+
+6. In GitHub repo **Settings → Secrets and variables → Actions → Variables**, set:
+
+```text
+VITE_API_BASE_URL=https://<your-worker>.workers.dev
+VITE_TUTOR_API_URL=https://<your-worker>.workers.dev/v1/tutor
+```
+
+7. Re-run **Deploy to GitHub Pages**.
+
+### What the backend stores
+
+- Student roster and classroom profiles
+- Instructor-published scenarios
+- Student activity feed
+- Grades and instructor comments
+- XDR response action ledger
+- Shared AMP incident/work state
+- Defender email lab state, blocked domains, and investigations
+- Instructor notepad body and saved templates
+
+This is intentionally small and classroom-friendly. It is not enterprise auth; it is a lightweight shared memory layer for a handful of students.
+
 ## Project Structure
 
 - `src/pages/` - main simulator pages (AMP, XDR, Defender, Notepad, Landing)

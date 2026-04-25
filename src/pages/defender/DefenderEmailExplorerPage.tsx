@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Modal } from "../../components/Modal";
 import { useSimulator } from "../../context/SimulatorContext";
 import { BASE_PHISHING_EMAILS, type MailRecord } from "../../data/defenderEmailLab";
+import { classroomApi } from "../../lib/apiClient";
 import {
   loadDefenderInvestigations,
   saveDefenderInvestigations,
@@ -72,6 +73,31 @@ export function DefenderEmailExplorerPage() {
   });
   const [activeMailId, setActiveMailId] = useState(BASE_PHISHING_EMAILS[0]?.id ?? "");
 
+  useEffect(() => {
+    if (!classroomApi.enabled) return;
+    let cancelled = false;
+    async function loadRemoteEmailState() {
+      try {
+        const [remoteMails, remoteBlocked] = await Promise.all([
+          classroomApi.getLabState<MailRecord[]>("default", EMAIL_STATE_KEY),
+          classroomApi.getLabState<string[]>("default", BLOCKED_DOMAINS_KEY),
+        ]);
+        if (cancelled) return;
+        if (Array.isArray(remoteMails) && remoteMails.length > 0) {
+          setMails(remoteMails);
+          setActiveMailId(remoteMails[0]?.id ?? "");
+        }
+        if (Array.isArray(remoteBlocked)) setBlockedDomains(remoteBlocked);
+      } catch (err) {
+        console.warn("Failed to load Defender email lab from backend.", err);
+      }
+    }
+    void loadRemoteEmailState();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const activeMail = useMemo(() => mails.find((m) => m.id === activeMailId) ?? null, [mails, activeMailId]);
 
   const filtered = useMemo(() => {
@@ -139,10 +165,20 @@ export function DefenderEmailExplorerPage() {
 
   useEffect(() => {
     localStorage.setItem(EMAIL_STATE_KEY, JSON.stringify(mails));
+    if (classroomApi.enabled) {
+      void classroomApi.putLabState("default", EMAIL_STATE_KEY, mails).catch((err) => {
+        console.warn("Failed to sync Defender email lab.", err);
+      });
+    }
   }, [mails]);
 
   useEffect(() => {
     localStorage.setItem(BLOCKED_DOMAINS_KEY, JSON.stringify(blockedDomains));
+    if (classroomApi.enabled) {
+      void classroomApi.putLabState("default", BLOCKED_DOMAINS_KEY, blockedDomains).catch((err) => {
+        console.warn("Failed to sync Defender blocked domains.", err);
+      });
+    }
   }, [blockedDomains]);
 
   useEffect(() => {

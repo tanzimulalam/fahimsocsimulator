@@ -34,8 +34,10 @@ jobs:
         env:
           # Repository variable (Settings → Secrets and variables → Actions → Variables):
           # Name: VITE_TUTOR_API_URL  Value: https://<your-worker>.workers.dev
+          # Name: VITE_API_BASE_URL    Value: https://<your-worker>.workers.dev
           # Direct browser calls to OpenAI are blocked (CORS); use workers/tutor-proxy.mjs + wrangler deploy.
           VITE_TUTOR_API_URL: ${{ vars.VITE_TUTOR_API_URL }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
         run: npm run build
 
       - name: Setup Pages

@@ -11,6 +11,7 @@ import {
 import type { Incident, IncidentStatus, IncidentWork } from "../types";
 import { INITIAL_INCIDENTS } from "../data/mockData";
 import { collectThreatHashesForScanLog, resolveScanOutcome } from "../lib/scanOutcome";
+import { classroomApi } from "../lib/apiClient";
 
 const DEFAULT_WORK: IncidentWork = {
   scan: { status: "idle" },
@@ -88,6 +89,7 @@ const RESPONSE_ACTIONS_KEY = "socResponseActionsV1";
 
 export function SimulatorProvider({ children }: { children: ReactNode }) {
   const [incidents, setIncidents] = useState<Incident[]>(() => cloneIncidents());
+  const [backendHydrated, setBackendHydrated] = useState(!classroomApi.enabled);
   const incidentsRef = useRef(incidents);
   useEffect(() => {
     incidentsRef.current = incidents;
@@ -111,6 +113,55 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
       return [];
     }
   });
+
+  useEffect(() => {
+    if (!classroomApi.enabled) return;
+    let cancelled = false;
+    async function loadRemoteState() {
+      try {
+        const [remoteIncidents, remoteWork, remoteActions] = await Promise.all([
+          classroomApi.getLabState<Incident[]>("default", "simulator-incidents"),
+          classroomApi.getLabState<Record<string, IncidentWork>>("default", "incident-work"),
+          classroomApi.getResponseActions(),
+        ]);
+        if (cancelled) return;
+        if (Array.isArray(remoteIncidents) && remoteIncidents.length > 0) setIncidents(remoteIncidents);
+        if (remoteWork && typeof remoteWork === "object") setIncidentWork(remoteWork);
+        if (Array.isArray(remoteActions)) {
+          setResponseActions(remoteActions);
+          localStorage.setItem(RESPONSE_ACTIONS_KEY, JSON.stringify(remoteActions));
+        }
+      } catch (err) {
+        console.warn("SOC backend unavailable; using local simulator state.", err);
+      } finally {
+        if (!cancelled) setBackendHydrated(true);
+      }
+    }
+    void loadRemoteState();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!classroomApi.enabled || !backendHydrated) return;
+    const timer = window.setTimeout(() => {
+      void classroomApi.putLabState("default", "simulator-incidents", incidents).catch((err) => {
+        console.warn("Failed to sync simulator incidents.", err);
+      });
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [incidents, backendHydrated]);
+
+  useEffect(() => {
+    if (!classroomApi.enabled || !backendHydrated) return;
+    const timer = window.setTimeout(() => {
+      void classroomApi.putLabState("default", "incident-work", incidentWork).catch((err) => {
+        console.warn("Failed to sync incident work.", err);
+      });
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [incidentWork, backendHydrated]);
 
   const addNotification = useCallback((title: string, message: string) => {
     window.dispatchEvent(new CustomEvent("sim-activity", { detail: { title, message } }));
@@ -240,12 +291,17 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
   const clearLastWorkflowAction = useCallback(() => setLastWorkflowAction(null), []);
   const clearActivityLog = useCallback(() => setActivityLog([]), []);
   const logResponseAction = useCallback((entry: Omit<ResponseActionRecord, "id" | "at">) => {
+    const next: ResponseActionRecord = { ...entry, id: uid(), at: Date.now() };
     setResponseActions((prev) => {
-      const next: ResponseActionRecord = { ...entry, id: uid(), at: Date.now() };
       const merged = [next, ...prev].slice(0, 1000);
       localStorage.setItem(RESPONSE_ACTIONS_KEY, JSON.stringify(merged));
       return merged;
     });
+    if (classroomApi.enabled) {
+      void classroomApi.addResponseAction(next).catch((err) => {
+        console.warn("Failed to sync response action.", err);
+      });
+    }
   }, []);
 
   const resetAll = useCallback(() => {
@@ -257,6 +313,15 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
     setLastWorkflowAction(null);
     setResponseActions([]);
     localStorage.removeItem(RESPONSE_ACTIONS_KEY);
+    if (classroomApi.enabled) {
+      void Promise.all([
+        classroomApi.clearResponseActions(),
+        classroomApi.putLabState("default", "simulator-incidents", cloneIncidents()),
+        classroomApi.putLabState("default", "incident-work", {}),
+      ]).catch((err) => {
+        console.warn("Failed to sync simulator reset.", err);
+      });
+    }
     addNotification("Reset", "All incidents were restored to their starting state.");
   }, [addNotification]);
 

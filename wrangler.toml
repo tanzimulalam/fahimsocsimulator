@@ -1,5 +1,12 @@
-# Optional: deploy the SOC Tutor proxy to Cloudflare Workers
-# See README "Live tutor on GitHub Pages"
-name = "fahim-soc-tutor"
+# Optional: deploy the SOC Tutor + classroom backend to Cloudflare Workers
+# See README "Backend + shared classroom memory"
+name = "fahim-soc-backend"
 main = "workers/tutor-proxy.mjs"
 compatibility_date = "2024-10-01"
+
+# After creating the database, replace database_id with the id printed by:
+# npx wrangler d1 create fahim-soc-classroom
+[[d1_databases]]
+binding = "DB"
+database_name = "fahim-soc-classroom"
+database_id = "replace-with-cloudflare-d1-database-id"
