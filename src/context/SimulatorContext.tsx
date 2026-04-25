@@ -53,6 +53,15 @@ function uid(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+function mergeIncidentCatalog(remote: Incident[], latestSeed: Incident[]): Incident[] {
+  const byId = new Map<string, Incident>();
+  remote.forEach((incident) => byId.set(incident.id, incident));
+  latestSeed.forEach((incident) => {
+    if (!byId.has(incident.id)) byId.set(incident.id, incident);
+  });
+  return [...byId.values()];
+}
+
 type SimulatorContextValue = {
   incidents: Incident[];
   searchQuery: string;
@@ -129,7 +138,9 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
           classroomApi.getResponseActions(),
         ]);
         if (cancelled) return;
-        if (Array.isArray(remoteIncidents) && remoteIncidents.length > 0) setIncidents(remoteIncidents);
+        if (Array.isArray(remoteIncidents) && remoteIncidents.length > 0) {
+          setIncidents(mergeIncidentCatalog(remoteIncidents, cloneIncidents()));
+        }
         if (remoteWork && typeof remoteWork === "object") setIncidentWork(remoteWork);
         if (Array.isArray(remoteActions)) {
           setResponseActions(remoteActions);
