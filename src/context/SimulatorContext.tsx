@@ -284,6 +284,7 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
   const addIncidentComment = useCallback((incidentId: string, text: string) => {
     const t = text.trim();
     if (!t) return;
+    const hostLine = incidentsRef.current.find((i) => i.id === incidentId)?.hostLine ?? incidentId;
     setIncidentWork((prev) => {
       const cur = prev[incidentId] ?? DEFAULT_WORK;
       return {
@@ -297,7 +298,8 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
         },
       };
     });
-  }, []);
+    addNotification("Incident comment", `${hostLine}: ${t.slice(0, 140)}`);
+  }, [addNotification]);
 
   const addLabIncident = useCallback((incident: Incident) => {
     setIncidents((prev) => [incident, ...prev]);
