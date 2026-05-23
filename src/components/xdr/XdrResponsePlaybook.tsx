@@ -225,36 +225,36 @@ export function XdrResponsePlaybook({ incident, onStatusChange }: XdrResponsePla
         ${state.notes.length === 0 ? '<p style="color: #57606a; font-style: italic;">No documentation notes provided during investigation.</p>' : ''}
         ${state.notes.map(n => {
           const t = Object.values(PLAYBOOK_TASKS).flat().find(x => x.id === n.taskId);
-          return \`
+          return `
             <div style="margin-bottom: 20px; padding: 16px; background: #f6f8fa; border-left: 4px solid #0969da; border-radius: 0 6px 6px 0;">
-              <h4 style="margin: 0 0 6px 0; color: #0969da; font-size: 16px;">\${t?.name || 'Task Note'}</h4>
-              <p style="margin: 0 0 12px 0; font-size: 12px; color: #57606a;">Logged by Analyst \${n.authorInitials} at \${new Date(n.timestamp).toLocaleString()}</p>
-              <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #24292f;">\${n.text}</div>
+              <h4 style="margin: 0 0 6px 0; color: #0969da; font-size: 16px;">${t?.name || 'Task Note'}</h4>
+              <p style="margin: 0 0 12px 0; font-size: 12px; color: #57606a;">Logged by Analyst ${n.authorInitials} at ${new Date(n.timestamp).toLocaleString()}</p>
+              <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #24292f;">${n.text}</div>
             </div>
-          \`;
+          `;
         }).join('')}
 
         <h2 style="color: #0969da; font-size: 20px; border-bottom: 1px solid #d0d7de; padding-bottom: 8px; margin-top: 32px; margin-bottom: 16px;">Action Log</h2>
         <ul style="list-style: none; padding: 0; margin: 0;">
-          ${state.actionsLog.map(log => \`
+          ${state.actionsLog.map(log => `
             <li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eaeef2; font-size: 13px; color: #24292f;">
-              <strong style="color: #0969da; font-family: monospace;">[\${new Date(log.timestamp).toLocaleString()}]</strong> 
-              <span style="font-weight: 600; margin-right: 4px;">Analyst \${log.authorInitials}:</span> \${log.description}
+              <strong style="color: #0969da; font-family: monospace;">[${new Date(log.timestamp).toLocaleString()}]</strong> 
+              <span style="font-weight: 600; margin-right: 4px;">Analyst ${log.authorInitials}:</span> ${log.description}
             </li>
-          \`).join('')}
+          `).join('')}
         </ul>
       </div>
     `;
 
     const opt = {
-      margin:       [0.4, 0.4, 0.4, 0.4],
-      filename:     \`Incident_Report_\${incident.id}.pdf\`,
+      margin:       0.4,
+      filename:     `Incident_Report_${incident.id}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
-    html2pdf().set(opt).from(element).save();
+    html2pdf().set(opt as any).from(element).save();
   };
 
   const closeIncident = () => {
