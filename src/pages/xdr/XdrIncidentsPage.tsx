@@ -19,7 +19,7 @@ export function XdrIncidentsPage() {
         if (storedStatus) modified.status = storedStatus as any;
         
         const storedAssignee = localStorage.getItem(`xdr_incident_assigned_${inc.id}`);
-        if (storedAssignee !== null) modified.assigned = storedAssignee || undefined;
+        if (storedAssignee !== null) modified.assigned = storedAssignee || null;
       } catch (e) {}
       return modified;
     });
@@ -32,7 +32,7 @@ export function XdrIncidentsPage() {
 
   const handleAssignChange = (id: string, newAssignee: string) => {
     localStorage.setItem(`xdr_incident_assigned_${id}`, newAssignee);
-    setLocalIncidents(prev => prev.map(inc => inc.id === id ? { ...inc, assigned: newAssignee || undefined } : inc));
+    setLocalIncidents(prev => prev.map(inc => inc.id === id ? { ...inc, assigned: newAssignee || null } : inc));
   };
 
   const activeIncident = useMemo(() => {

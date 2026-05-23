@@ -176,6 +176,11 @@ export function XdrAttackGraph({ nodes, edges }: XdrAttackGraphProps) {
           );
         })}
 
+        {/* Nodes */}
+        {layoutNodes.map(n => {
+          const color = DISPOSITION_COLORS[n.disposition] || DISPOSITION_COLORS.unknown;
+          const isSelected = activeNode?.id === n.id;
+          
           let filter = undefined;
           if (n.disposition === 'malicious') filter = "url(#glow-malicious)";
           if (n.disposition === 'suspicious') filter = "url(#glow-suspicious)";
