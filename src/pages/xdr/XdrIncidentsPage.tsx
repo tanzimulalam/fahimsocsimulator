@@ -2,27 +2,37 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { xdrIncidents, XDRIncident } from "../../data/xdrIncidents";
 import { XdrIncidentDetail } from "../../components/xdr/XdrIncidentDetail";
+import { useClassroom } from "../../context/ClassroomContext";
 
 export function XdrIncidentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const incidentParam = searchParams.get("incident");
 
-  // Load state from localStorage for statuses
+  const { students } = useClassroom();
+
+  // Load state from localStorage for statuses and assignees
   const [localIncidents, setLocalIncidents] = useState<XDRIncident[]>(() => {
     return xdrIncidents.map(inc => {
+      let modified = { ...inc };
       try {
         const storedStatus = localStorage.getItem(`xdr_incident_status_${inc.id}`);
-        if (storedStatus) {
-          return { ...inc, status: storedStatus as any };
-        }
+        if (storedStatus) modified.status = storedStatus as any;
+        
+        const storedAssignee = localStorage.getItem(`xdr_incident_assigned_${inc.id}`);
+        if (storedAssignee !== null) modified.assigned = storedAssignee || undefined;
       } catch (e) {}
-      return inc;
+      return modified;
     });
   });
 
   const handleStatusChange = (id: string, newStatus: string) => {
     localStorage.setItem(`xdr_incident_status_${id}`, newStatus);
     setLocalIncidents(prev => prev.map(inc => inc.id === id ? { ...inc, status: newStatus as any } : inc));
+  };
+
+  const handleAssignChange = (id: string, newAssignee: string) => {
+    localStorage.setItem(`xdr_incident_assigned_${id}`, newAssignee);
+    setLocalIncidents(prev => prev.map(inc => inc.id === id ? { ...inc, assigned: newAssignee || undefined } : inc));
   };
 
   const activeIncident = useMemo(() => {
@@ -186,17 +196,25 @@ export function XdrIncidentsPage() {
                   </td>
                   <td style={{ padding: '12px 16px', color: '#8b949e' }}>{inc.source.join(', ')}</td>
                   <td style={{ padding: '12px 16px', color: '#8b949e' }}>{createdText}</td>
-                  <td style={{ padding: '12px 16px' }}>
-                    {inc.assigned ? (
-                      <div style={{ 
-                        width: '24px', height: '24px', borderRadius: '50%', background: '#0969da', 
-                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold'
-                      }} title={inc.assigned}>
-                        {inc.assigned}
-                      </div>
-                    ) : (
-                      <span style={{ color: '#8b949e' }}>Unassigned</span>
-                    )}
+                  <td style={{ padding: '12px 16px' }} onClick={e => e.stopPropagation()}>
+                    <select 
+                      value={inc.assigned || ""} 
+                      onChange={(e) => handleAssignChange(inc.id, e.target.value)}
+                      style={{ 
+                        padding: '4px 8px', border: '1px solid #30363d', borderRadius: '4px', 
+                        fontSize: '12px', background: '#0d1117', color: '#e6edf3', cursor: 'pointer',
+                        width: '100px'
+                      }}
+                    >
+                      <option value="">Unassigned</option>
+                      {students.map(s => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                      ))}
+                      {/* If the current assignee isn't in the students list (e.g. from mock data), show it anyway */}
+                      {inc.assigned && !students.find(s => s.name === inc.assigned) && (
+                        <option value={inc.assigned}>{inc.assigned}</option>
+                      )}
+                    </select>
                   </td>
                   <td style={{ padding: '12px 16px' }} onClick={e => e.stopPropagation()}>
                     <select 
