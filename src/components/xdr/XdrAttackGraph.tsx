@@ -139,11 +139,12 @@ export function XdrAttackGraph({ nodes, edges }: XdrAttackGraphProps) {
               stroke-dasharray: 6, 6;
               animation: dashAnim 1s linear infinite;
             }
-            .node-group {
+            .node-content {
               transition: transform 0.2s ease;
+              transform-origin: 60px 25px;
             }
-            .node-group:hover {
-              transform: scale(1.02);
+            .node-group:hover .node-content {
+              transform: scale(1.05);
             }
           `}
         </style>
@@ -189,33 +190,35 @@ export function XdrAttackGraph({ nodes, edges }: XdrAttackGraphProps) {
             <g 
               key={n.id} 
               className="node-group"
-              style={{ cursor: 'pointer', transformOrigin: `${n.cx}px ${n.cy}px` }}
+              style={{ cursor: 'pointer' }}
               transform={`translate(${n.x}, ${n.y})`}
               onClick={() => setActiveNode(n)}
               filter={filter}
             >
-              <rect
-                x="0" y="0" width="120" height="50" rx="6"
-                fill={isSelected ? "#1f2428" : "#161b22"}
-                stroke={isSelected ? "#58a6ff" : color}
-                strokeWidth={isSelected ? "2" : "1"}
-                style={{ transition: 'all 0.2s ease' }}
-              />
-              {/* Left Color Bar */}
-              <rect x="0" y="0" width="8" height="50" fill={color} rx="6" style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }} />
-              
-              {/* Icon */}
-              <svg x="14" y="15" width="20" height="20" color="#c9d1d9">
-                {getNodeIcon(n.type)}
-              </svg>
-              
-              {/* Label */}
-              <text x="42" y="25" fill="#e6edf3" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
-                {n.label.length > 12 ? n.label.substring(0, 10) + '...' : n.label}
-              </text>
-              <text x="42" y="38" fill="#8b949e" fontSize="9" fontFamily="sans-serif" style={{ textTransform: 'uppercase' }}>
-                {n.disposition}
-              </text>
+              <g className="node-content">
+                <rect
+                  x="0" y="0" width="120" height="50" rx="6"
+                  fill={isSelected ? "#1f2428" : "#161b22"}
+                  stroke={isSelected ? "#58a6ff" : color}
+                  strokeWidth={isSelected ? "2" : "1"}
+                  style={{ transition: 'all 0.2s ease' }}
+                />
+                {/* Left Color Bar */}
+                <rect x="0" y="0" width="8" height="50" fill={color} rx="6" style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }} />
+                
+                {/* Icon */}
+                <svg x="14" y="15" width="20" height="20" color="#c9d1d9">
+                  {getNodeIcon(n.type)}
+                </svg>
+                
+                {/* Label */}
+                <text x="42" y="25" fill="#e6edf3" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
+                  {n.label.length > 12 ? n.label.substring(0, 10) + '...' : n.label}
+                </text>
+                <text x="42" y="38" fill="#8b949e" fontSize="9" fontFamily="sans-serif" style={{ textTransform: 'uppercase' }}>
+                  {n.disposition}
+                </text>
+              </g>
             </g>
           );
         })}
