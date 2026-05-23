@@ -1,8 +1,9 @@
 import { Link, NavLink } from "react-router-dom";
-import { countByStatus, useSimulator } from "../../context/SimulatorContext";
+import { useSimulator } from "../../context/SimulatorContext";
+import { xdrIncidents } from "../../data/xdrIncidents";
 
 export function XdrSidebar() {
-  const { incidents, addNotification } = useSimulator();
+  const { addNotification } = useSimulator();
 
   return (
     <>
@@ -24,8 +25,12 @@ export function XdrSidebar() {
             <li>
               <NavLink to="/xdr/incidents" className={({ isActive }) => "xdr-nav-link" + (isActive ? " active" : "")}>
                 Incidents
-                <span className="xdr-nav-badge" title="From AMP sim">
-                  {countByStatus(incidents, "requires_attention") + countByStatus(incidents, "in_progress")}
+                <span className="xdr-nav-badge" title="Open Incidents">
+                  {xdrIncidents.filter(i => {
+                    const saved = localStorage.getItem(`xdr_incident_status_${i.id}`);
+                    const status = saved || i.status;
+                    return status.startsWith('New:') || status.startsWith('Open:');
+                  }).length}
                 </span>
               </NavLink>
             </li>

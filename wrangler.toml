@@ -9,4 +9,4 @@ compatibility_date = "2024-10-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "fahim-soc-classroom"
-database_id = "replace-with-cloudflare-d1-database-id"
+database_id = "befa3c0d-3761-42c2-a15d-d7cf86d9bc82"

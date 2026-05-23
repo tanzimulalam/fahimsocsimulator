@@ -11,6 +11,22 @@ type StudentSummary = {
   actionCount: number;
 };
 
+function activityTag(action: string, details: string): { label: string; sevClass: "sev-low" | "sev-medium" | "sev-high" | "sev-critical" } {
+  const text = `${action} ${details}`.toLowerCase();
+  if (text.includes("resolved") || text.includes("mark resolved")) return { label: "Resolved", sevClass: "sev-low" };
+  if (text.includes("in progress") || text.includes("begin work")) return { label: "In Progress", sevClass: "sev-medium" };
+  if (text.includes("incident comment") || text.includes("comment")) return { label: "Comment", sevClass: "sev-medium" };
+  if (text.includes("scan complete — threats remain") || text.includes("threats remain")) {
+    return { label: "Threats Remain", sevClass: "sev-high" };
+  }
+  if (text.includes("scan complete")) return { label: "Scan Complete", sevClass: "sev-low" };
+  if (text.includes("response action") || text.includes("block") || text.includes("isolate")) {
+    return { label: "Response Action", sevClass: "sev-high" };
+  }
+  if (text.includes("scenario opened")) return { label: "Assignment Opened", sevClass: "sev-medium" };
+  return { label: "Activity", sevClass: "sev-low" };
+}
+
 export function TrainingHqPage() {
   const { session, students, activities, messages, publishInstructorMessage } = useClassroom();
   const { addNotification } = useSimulator();
@@ -109,7 +125,12 @@ export function TrainingHqPage() {
                     <td>{new Date(s.createdAt).toLocaleString()}</td>
                     <td>{s.lastAt ? new Date(s.lastAt).toLocaleString() : "No activity"}</td>
                     <td>{s.actionCount}</td>
-                    <td>{s.lastAction}</td>
+                    <td>
+                      <span className={`sev ${activityTag("latest", s.lastAction).sevClass}`} style={{ marginRight: 8 }}>
+                        {activityTag("latest", s.lastAction).label}
+                      </span>
+                      {s.lastAction}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -135,7 +156,12 @@ export function TrainingHqPage() {
                   <tr key={a.id}>
                     <td>{new Date(a.at).toLocaleString()}</td>
                     <td>{a.studentName}</td>
-                    <td>{a.action}</td>
+                    <td>
+                      <span className={`sev ${activityTag(a.action, a.details).sevClass}`} style={{ marginRight: 8 }}>
+                        {activityTag(a.action, a.details).label}
+                      </span>
+                      {a.action}
+                    </td>
                     <td>{a.details}</td>
                   </tr>
                 ))}
