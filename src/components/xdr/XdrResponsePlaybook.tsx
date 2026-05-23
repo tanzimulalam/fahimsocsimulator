@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { PlaybookState, XDRIncident } from '../../data/xdrIncidents';
 import { useClassroom } from '../../context/ClassroomContext';
+// @ts-ignore
+import html2pdf from 'html2pdf.js';
 
 interface XdrResponsePlaybookProps {
   incident: XDRIncident;
@@ -186,6 +188,75 @@ export function XdrResponsePlaybook({ incident, onStatusChange }: XdrResponsePla
     URL.revokeObjectURL(url);
   };
 
+  const exportPdf = () => {
+    const element = document.createElement('div');
+    element.innerHTML = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #24292f; background: #ffffff;">
+        <div style="text-align: center; border-bottom: 3px solid #0070d2; padding-bottom: 24px; margin-bottom: 32px;">
+          <h1 style="color: #0070d2; margin: 0 0 8px 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2.5px; font-weight: 800;">
+            DATA GROUP SOC SIMULATION LAB BY FAHIM
+          </h1>
+          <p style="color: #57606a; margin: 0; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+            Official Incident Response Report
+          </p>
+        </div>
+        
+        <h2 style="color: #0969da; font-size: 20px; border-bottom: 1px solid #d0d7de; padding-bottom: 8px; margin-bottom: 16px;">Incident Profile</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 32px; font-size: 14px;">
+          <tr>
+            <td style="padding: 10px; border: 1px solid #d0d7de; font-weight: 600; width: 25%; background: #f6f8fa;">Incident ID</td>
+            <td style="padding: 10px; border: 1px solid #d0d7de;">${incident.id}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #d0d7de; font-weight: 600; background: #f6f8fa;">Title</td>
+            <td style="padding: 10px; border: 1px solid #d0d7de; font-weight: 600;">${incident.title}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #d0d7de; font-weight: 600; background: #f6f8fa;">Priority</td>
+            <td style="padding: 10px; border: 1px solid #d0d7de; color: #cf222e; font-weight: bold;">${incident.priority}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #d0d7de; font-weight: 600; background: #f6f8fa;">Final Status</td>
+            <td style="padding: 10px; border: 1px solid #d0d7de;">${incident.status}</td>
+          </tr>
+        </table>
+
+        <h2 style="color: #0969da; font-size: 20px; border-bottom: 1px solid #d0d7de; padding-bottom: 8px; margin-bottom: 16px;">Analyst Notes & Documentation</h2>
+        ${state.notes.length === 0 ? '<p style="color: #57606a; font-style: italic;">No documentation notes provided during investigation.</p>' : ''}
+        ${state.notes.map(n => {
+          const t = Object.values(PLAYBOOK_TASKS).flat().find(x => x.id === n.taskId);
+          return \`
+            <div style="margin-bottom: 20px; padding: 16px; background: #f6f8fa; border-left: 4px solid #0969da; border-radius: 0 6px 6px 0;">
+              <h4 style="margin: 0 0 6px 0; color: #0969da; font-size: 16px;">\${t?.name || 'Task Note'}</h4>
+              <p style="margin: 0 0 12px 0; font-size: 12px; color: #57606a;">Logged by Analyst \${n.authorInitials} at \${new Date(n.timestamp).toLocaleString()}</p>
+              <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #24292f;">\${n.text}</div>
+            </div>
+          \`;
+        }).join('')}
+
+        <h2 style="color: #0969da; font-size: 20px; border-bottom: 1px solid #d0d7de; padding-bottom: 8px; margin-top: 32px; margin-bottom: 16px;">Action Log</h2>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          ${state.actionsLog.map(log => \`
+            <li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eaeef2; font-size: 13px; color: #24292f;">
+              <strong style="color: #0969da; font-family: monospace;">[\${new Date(log.timestamp).toLocaleString()}]</strong> 
+              <span style="font-weight: 600; margin-right: 4px;">Analyst \${log.authorInitials}:</span> \${log.description}
+            </li>
+          \`).join('')}
+        </ul>
+      </div>
+    `;
+
+    const opt = {
+      margin:       [0.4, 0.4, 0.4, 0.4],
+      filename:     \`Incident_Report_\${incident.id}.pdf\`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+  };
+
   const closeIncident = () => {
     onStatusChange('Closed: Confirmed Threat');
     setState(prev => ({ ...prev, currentPhase: 'closed' }));
@@ -347,7 +418,10 @@ export function XdrResponsePlaybook({ incident, onStatusChange }: XdrResponsePla
                       width: '200px', boxShadow: '0 -4px 12px rgba(0,0,0,0.3)', zIndex: 10
                     }}>
                       <button onClick={closeAndExport} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid #30363d', color: '#e6edf3', cursor: 'pointer' }}>
-                        Close and Export
+                        Close and Export JSON
+                      </button>
+                      <button onClick={() => { closeIncident(); exportPdf(); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid #30363d', color: '#e6edf3', cursor: 'pointer' }}>
+                        Close and Export PDF
                       </button>
                       <button onClick={closeIncident} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', color: '#e6edf3', cursor: 'pointer' }}>
                         Close Incident
@@ -376,8 +450,8 @@ export function XdrResponsePlaybook({ incident, onStatusChange }: XdrResponsePla
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h4 style={{ margin: 0, fontSize: '14px' }}>Actions Taken</h4>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="link-btn" style={{ fontSize: '11px' }}>View Notes</button>
-            <button className="link-btn" onClick={exportJson} style={{ fontSize: '11px' }}>Download ↓</button>
+            <button className="link-btn" onClick={exportPdf} style={{ fontSize: '11px', color: '#f85149' }}>PDF ↓</button>
+            <button className="link-btn" onClick={exportJson} style={{ fontSize: '11px' }}>JSON ↓</button>
           </div>
         </div>
         
