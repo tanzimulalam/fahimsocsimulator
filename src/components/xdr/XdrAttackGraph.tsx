@@ -121,7 +121,32 @@ export function XdrAttackGraph({ nodes, edges }: XdrAttackGraphProps) {
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
             <polygon points="0 0, 10 3.5, 0 7" fill="#8b949e" />
           </marker>
+          <filter id="glow-malicious" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          <filter id="glow-suspicious" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
         </defs>
+        <style>
+          {`
+            @keyframes dashAnim {
+              to { stroke-dashoffset: -20; }
+            }
+            .animated-edge {
+              stroke-dasharray: 6, 6;
+              animation: dashAnim 1s linear infinite;
+            }
+            .node-group {
+              transition: transform 0.2s ease;
+            }
+            .node-group:hover {
+              transform: scale(1.02);
+            }
+          `}
+        </style>
         
         {/* Edges */}
         {edges.map((e, i) => {
@@ -140,33 +165,36 @@ export function XdrAttackGraph({ nodes, edges }: XdrAttackGraphProps) {
           return (
             <path
               key={`edge-${i}`}
+              className="animated-edge"
               d={`M ${startX} ${startY} C ${ctrlX1} ${startY}, ${ctrlX2} ${endY}, ${endX} ${endY}`}
               fill="none"
-              stroke="#8b949e"
+              stroke="#58a6ff"
               strokeWidth="2"
               markerEnd="url(#arrowhead)"
-              opacity={0.6}
+              opacity={0.8}
             />
           );
         })}
 
-        {/* Nodes */}
-        {layoutNodes.map(n => {
-          const color = DISPOSITION_COLORS[n.disposition] || DISPOSITION_COLORS.unknown;
-          const isSelected = activeNode?.id === n.id;
+          let filter = undefined;
+          if (n.disposition === 'malicious') filter = "url(#glow-malicious)";
+          if (n.disposition === 'suspicious') filter = "url(#glow-suspicious)";
           
           return (
             <g 
               key={n.id} 
+              className="node-group"
+              style={{ cursor: 'pointer', transformOrigin: `${n.cx}px ${n.cy}px` }}
               transform={`translate(${n.x}, ${n.y})`}
               onClick={() => setActiveNode(n)}
-              style={{ cursor: 'pointer' }}
+              filter={filter}
             >
               <rect
                 x="0" y="0" width="120" height="50" rx="6"
-                fill="#161b22"
-                stroke={isSelected ? "#fff" : color}
+                fill={isSelected ? "#1f2428" : "#161b22"}
+                stroke={isSelected ? "#58a6ff" : color}
                 strokeWidth={isSelected ? "2" : "1"}
+                style={{ transition: 'all 0.2s ease' }}
               />
               {/* Left Color Bar */}
               <rect x="0" y="0" width="8" height="50" fill={color} rx="6" style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }} />

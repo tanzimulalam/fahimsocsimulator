@@ -80,6 +80,7 @@ export function XdrResponsePlaybook({ incident, onStatusChange }: XdrResponsePla
 
   const [activeNoteTask, setActiveNoteTask] = useState<TaskDef | null>(null);
   const [noteText, setNoteText] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
   const [closeDropdownOpen, setCloseDropdownOpen] = useState(false);
 
@@ -117,6 +118,49 @@ export function XdrResponsePlaybook({ incident, onStatusChange }: XdrResponsePla
     
     setActiveNoteTask(null);
     setNoteText('');
+  };
+
+  const handleGenerateAI = async () => {
+    if (!activeNoteTask) return;
+    setIsGenerating(true);
+    
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      setNoteText("Error: VITE_OPENAI_API_KEY environment variable is missing.");
+      setIsGenerating(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are a senior SOC analyst investigating a cybersecurity incident. Write a concise, professional analyst note for the given playbook task based on the incident details. Output only the note text." },
+            { role: "user", content: `Incident Title: ${incident.title}\nTactics: ${incident.tactics.join(', ')}\nDescription: ${incident.description}\nHost: ${incident.host}\n\nTask: ${activeNoteTask.name}\nTask Description: ${activeNoteTask.description}\n\nGenerate the analyst note:` }
+          ],
+          max_tokens: 250,
+          temperature: 0.7
+        })
+      });
+      
+      const data = await response.json();
+      if (data.choices && data.choices.length > 0) {
+        setNoteText(data.choices[0].message.content.trim());
+      } else {
+        setNoteText("Error generating note. Please try again.");
+      }
+    } catch (e) {
+      setNoteText("Error generating note: " + (e as Error).message);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const exportJson = () => {
@@ -380,6 +424,20 @@ export function XdrResponsePlaybook({ incident, onStatusChange }: XdrResponsePla
           }}>
             <h3 style={{ margin: '0 0 8px' }}>Generate Note</h3>
             <p style={{ color: '#8b949e', fontSize: '13px', margin: '0 0 16px' }}>For task: {activeNoteTask.name}</p>
+            
+            <button 
+              onClick={handleGenerateAI} 
+              disabled={isGenerating}
+              style={{
+                background: 'linear-gradient(45deg, #0070d2, #8a2be2)',
+                color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px',
+                cursor: isGenerating ? 'not-allowed' : 'pointer', fontWeight: 'bold',
+                marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px',
+                opacity: isGenerating ? 0.7 : 1
+              }}
+            >
+              {isGenerating ? '⏳ Generating with AI...' : '✨ Auto-Generate with AI'}
+            </button>
             <textarea 
               autoFocus
               value={noteText}

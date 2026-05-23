@@ -35,6 +35,37 @@ function getTacticColor(tactic: string) {
 export function XdrIncidentDetail({ incident, onStatusChange, onClose }: XdrIncidentDetailProps) {
   const [activeTab, setActiveTab] = useState('Overview');
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isInWatchlist, setIsInWatchlist] = useState(false);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleWatchlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isInWatchlist) {
+      setIsInWatchlist(false);
+      showToast('Indicator removed from watchlist.');
+    } else {
+      setIsInWatchlist(true);
+      showToast('Indicator added to watchlist successfully!');
+    }
+  };
+
+  const handleDownload = () => {
+    showToast('Preparing JSON download...');
+    setTimeout(() => {
+      const blob = new Blob([JSON.stringify(incident.detectionEvents, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `detection_events_${incident.id}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }, 500);
+  };
 
   // Filters for Detection tab
   const [sevFilter, setSevFilter] = useState('All');
@@ -124,8 +155,8 @@ export function XdrIncidentDetail({ incident, onStatusChange, onClose }: XdrInci
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button className="btn">Edit</button>
-                <button className="btn btn-primary" style={{ background: '#0070d2', color: '#fff' }}>Launch new incident workflow</button>
+                <button className="btn" onClick={() => showToast('Editing is disabled in the simulator.')}>Edit</button>
+                <button className="btn btn-primary" onClick={() => showToast('New workflow launched!')} style={{ background: '#0070d2', color: '#fff' }}>Launch new incident workflow</button>
               </div>
             </div>
 
@@ -161,7 +192,9 @@ export function XdrIncidentDetail({ incident, onStatusChange, onClose }: XdrInci
                 <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>
                   {incident.detectionEvents[0]?.indicators[0] || 'Unknown'}
                 </div>
-                <a href="#" style={{ color: '#58a6ff', fontSize: '12px' }}>Add to watchlist</a>
+                <a href="#" onClick={handleWatchlist} style={{ color: '#58a6ff', fontSize: '12px' }}>
+                  {isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+                </a>
               </div>
             </div>
           </div>
@@ -185,7 +218,7 @@ export function XdrIncidentDetail({ incident, onStatusChange, onClose }: XdrInci
                   ))}
                 </select>
               </div>
-              <button className="btn">Download JSON ↓</button>
+              <button className="btn" onClick={handleDownload}>Download JSON ↓</button>
             </div>
 
             <table className="data-table">
@@ -258,6 +291,18 @@ export function XdrIncidentDetail({ incident, onStatusChange, onClose }: XdrInci
           <XdrResponsePlaybook incident={incident} onStatusChange={onStatusChange} />
         )}
       </div>
+
+      {/* Toast Notification Overlay */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px',
+          background: '#238636', color: '#fff', padding: '12px 24px',
+          borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          zIndex: 9999, fontWeight: 600
+        }}>
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }
