@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { xdrIncidents, XDRIncident } from "../../data/xdrIncidents";
 import { XdrIncidentDetail } from "../../components/xdr/XdrIncidentDetail";
 import { useClassroom } from "../../context/ClassroomContext";
+import { classroomApi } from "../../lib/apiClient";
 
 export function XdrIncidentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -34,6 +35,41 @@ export function XdrIncidentsPage() {
     localStorage.setItem(`xdr_incident_assigned_${id}`, newAssignee);
     setLocalIncidents(prev => prev.map(inc => inc.id === id ? { ...inc, assigned: newAssignee || null } : inc));
   };
+
+  const [backendHydrated, setBackendHydrated] = useState(!classroomApi.enabled);
+
+  // Sync from backend
+  useEffect(() => {
+    if (!classroomApi.enabled) return;
+    let cancelled = false;
+    async function loadRemote() {
+      try {
+        const remote = await classroomApi.getLabState<XDRIncident[]>("default", "xdr-incidents");
+        if (!cancelled && remote && Array.isArray(remote)) {
+          // Merge: use remote status and assignee for matching IDs
+          setLocalIncidents(prev => prev.map(localInc => {
+            const r = remote.find(ri => ri.id === localInc.id);
+            if (r) return { ...localInc, status: r.status, assigned: r.assigned };
+            return localInc;
+          }));
+        }
+      } catch (e) {
+      } finally {
+        if (!cancelled) setBackendHydrated(true);
+      }
+    }
+    loadRemote();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Sync to backend
+  useEffect(() => {
+    if (!classroomApi.enabled || !backendHydrated) return;
+    const timer = window.setTimeout(() => {
+      classroomApi.putLabState("default", "xdr-incidents", localIncidents).catch(() => {});
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [localIncidents, backendHydrated]);
 
   const activeIncident = useMemo(() => {
     if (!incidentParam) return null;

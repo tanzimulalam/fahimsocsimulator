@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { PlaybookState, XDRIncident } from '../../data/xdrIncidents';
 import { useClassroom } from '../../context/ClassroomContext';
+import { classroomApi } from '../../lib/apiClient';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 
@@ -15,7 +16,7 @@ type TaskDef = {
   id: string;
   name: string;
   description: string;
-  actionType: 'note' | 'execute';
+  actionType: 'note' | 'execute' | 'both';
 };
 
 const PLAYBOOK_TASKS: Record<string, TaskDef[]> = {
@@ -37,7 +38,7 @@ const PLAYBOOK_TASKS: Record<string, TaskDef[]> = {
   ],
   eradication: [
     { id: 'er-1', name: 'Mitigate or Remediate Vulnerabilities', description: 'Add a note about the affecting vulnerabilities and how mitigations or remediation will be done.', actionType: 'note' },
-    { id: 'er-2', name: 'Remove Malicious Content', description: 'Add a note about the action achieved to ensure the removal of the malware.', actionType: 'note' },
+    { id: 'er-2', name: 'Remove Malicious Content', description: 'Add a note about the action achieved to ensure the removal of the malware.', actionType: 'both' },
     { id: 'er-3', name: 'Re-image Systems', description: 'Re-image systems, as needed.', actionType: 'note' },
   ],
   recovery: [
@@ -76,9 +77,34 @@ export function XdrResponsePlaybook({ incident, onStatusChange }: XdrResponsePla
     return DEFAULT_STATE;
   });
 
+  const [backendHydrated, setBackendHydrated] = useState(!classroomApi.enabled);
+
+  useEffect(() => {
+    if (!classroomApi.enabled) return;
+    let cancelled = false;
+    async function load() {
+      try {
+        const remote = await classroomApi.getLabState<PlaybookState>("default", storageKey);
+        if (!cancelled && remote) {
+          setState(remote);
+        }
+      } catch (e) {
+      } finally {
+        if (!cancelled) setBackendHydrated(true);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [storageKey]);
+
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(state));
-  }, [state, storageKey]);
+    if (!classroomApi.enabled || !backendHydrated) return;
+    const timer = window.setTimeout(() => {
+      classroomApi.putLabState("default", storageKey, state).catch(() => {});
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [state, backendHydrated, storageKey]);
 
   const [activeNoteTask, setActiveNoteTask] = useState<TaskDef | null>(null);
   const [noteText, setNoteText] = useState('');
@@ -363,7 +389,7 @@ export function XdrResponsePlaybook({ incident, onStatusChange }: XdrResponsePla
                         <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#c9d1d9' }}>{task.description}</p>
                         
                         <div style={{ display: 'flex', gap: '12px' }}>
-                          {task.actionType === 'note' ? (
+                          {(task.actionType === 'note' || task.actionType === 'both') && (
                             <button 
                               className="btn" 
                               onClick={() => setActiveNoteTask(task)}
@@ -371,7 +397,8 @@ export function XdrResponsePlaybook({ incident, onStatusChange }: XdrResponsePla
                             >
                               ✨ Generate note
                             </button>
-                          ) : (
+                          )}
+                          {(task.actionType === 'execute' || task.actionType === 'both') && (
                             <button 
                               className="btn btn-primary" 
                               onClick={() => handleExecute(task)}

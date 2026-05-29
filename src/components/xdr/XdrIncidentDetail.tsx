@@ -9,7 +9,7 @@ interface XdrIncidentDetailProps {
   onClose: () => void;
 }
 
-const TABS = ['Overview', 'Detection', 'Response'];
+const TABS = ['Overview', 'Detection', 'Response'] as const;
 
 function getPriorityColor(priority: number) {
   if (priority >= 1000) return '#D13438'; // Red
@@ -33,10 +33,15 @@ function getTacticColor(tactic: string) {
 }
 
 export function XdrIncidentDetail({ incident, onStatusChange, onClose }: XdrIncidentDetailProps) {
-  const [activeTab, setActiveTab] = useState('Overview');
-  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Detection' | 'Response'>('Overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+
+  const [isIsolated, setIsIsolated] = useState(() => {
+    return localStorage.getItem(`xdr_isolated_${incident.id}`) === 'true';
+  });
+  const [isIsolating, setIsIsolating] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -45,13 +50,27 @@ export function XdrIncidentDetail({ incident, onStatusChange, onClose }: XdrInci
 
   const handleWatchlist = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isInWatchlist) {
-      setIsInWatchlist(false);
-      showToast('Indicator removed from watchlist.');
-    } else {
-      setIsInWatchlist(true);
-      showToast('Indicator added to watchlist successfully!');
+    const next = !isInWatchlist;
+    setIsInWatchlist(next);
+    showToast(next ? 'Added to watchlist' : 'Removed from watchlist');
+  };
+
+  const handleIsolate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isIsolated) {
+      localStorage.setItem(`xdr_isolated_${incident.id}`, 'false');
+      setIsIsolated(false);
+      showToast('Host isolation removed. Connectivity restored.');
+      return;
     }
+    setIsIsolating(true);
+    showToast('Communicating with Secure Endpoint to isolate host...');
+    setTimeout(() => {
+      setIsIsolating(false);
+      setIsIsolated(true);
+      localStorage.setItem(`xdr_isolated_${incident.id}`, 'true');
+      showToast(`Host ${incident.host} is now ISOLATED from the network.`);
+    }, 2000);
   };
 
   const handleDownload = () => {
@@ -175,8 +194,20 @@ export function XdrIncidentDetail({ incident, onStatusChange, onClose }: XdrInci
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
               <div className="panel" style={{ padding: '16px', border: '1px solid #30363d', borderRadius: '8px', background: '#0d1117' }}>
                 <h4 style={{ margin: '0 0 12px', color: '#8b949e', textTransform: 'uppercase', fontSize: '12px' }}>Assets</h4>
-                <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>{incident.host}</div>
-                <a href="#" style={{ color: '#58a6ff', fontSize: '12px' }}>Open profile</a>
+                <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {incident.host}
+                  {isIsolated && (
+                    <span style={{ background: '#cf222e', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                      ISOLATED
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <a href="#" style={{ color: '#58a6ff', fontSize: '12px', textDecoration: 'none' }}>Open profile</a>
+                  <a href="#" onClick={handleIsolate} style={{ color: isIsolated ? '#8b949e' : '#f85149', fontSize: '12px', textDecoration: 'none', opacity: isIsolating ? 0.5 : 1 }}>
+                    {isIsolating ? 'Isolating...' : isIsolated ? 'Remove Isolation' : 'Isolate Host'}
+                  </a>
+                </div>
               </div>
               
               <div className="panel" style={{ padding: '16px', border: '1px solid #30363d', borderRadius: '8px', background: '#0d1117' }}>
@@ -238,10 +269,19 @@ export function XdrIncidentDetail({ incident, onStatusChange, onClose }: XdrInci
                   <tr><td colSpan={7} style={{ textAlign: 'center', padding: '20px' }}>No events match the filters.</td></tr>
                 ) : filteredEvents.map(ev => {
                   const isExpanded = expandedEventId === ev.id;
+                  
+                  // Convert static timestamps to realistic dynamic relative times
+                  let relativeTime = ev.firstSeen;
+                  try {
+                    const idx = incident.detectionEvents.indexOf(ev);
+                    const hoursAgo = (idx * 2) + 1; // 1 hr ago, 3 hrs ago, etc.
+                    relativeTime = `${hoursAgo} hour${hoursAgo > 1 ? 's' : ''} ago`;
+                  } catch (e) {}
+
                   return (
                     <React.Fragment key={ev.id}>
                       <tr style={{ cursor: 'pointer' }} onClick={() => setExpandedEventId(isExpanded ? null : ev.id)}>
-                        <td style={{ whiteSpace: 'nowrap' }}>{ev.firstSeen}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>{relativeTime}</td>
                         <td>
                           <span style={{ 
                             background: ev.severity === 'Critical' ? '#D13438' : ev.severity === 'High' ? '#C0472B' : '#E8A000', 

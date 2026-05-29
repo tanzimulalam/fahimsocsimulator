@@ -115,7 +115,7 @@ export function XdrAttackGraph({ nodes, edges }: XdrAttackGraphProps) {
   const maxY = Math.max(300, ...layoutNodes.map(n => n.y + 100));
 
   return (
-    <div className="xdr-attack-graph-container" style={{ position: 'relative', width: '100%', overflowX: 'auto', background: '#0d1117', border: '1px solid #30363d', borderRadius: '8px' }}>
+    <div className="xdr-attack-graph-container" style={{ position: 'relative', width: '100%', overflow: 'auto', background: '#0d1117', border: '1px solid #30363d', borderRadius: '8px' }}>
       <svg width={maxX} height={maxY} style={{ display: 'block' }}>
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
