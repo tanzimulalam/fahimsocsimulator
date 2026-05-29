@@ -245,6 +245,10 @@ export function XdrResponsePlaybook({ incident, onStatusChange }: XdrResponsePla
             <td style="padding: 10px; border: 1px solid #d0d7de; font-weight: 600; background: #f6f8fa;">Final Status</td>
             <td style="padding: 10px; border: 1px solid #d0d7de;">${incident.status}</td>
           </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #d0d7de; font-weight: 600; background: #f6f8fa;">Handled By</td>
+            <td style="padding: 10px; border: 1px solid #d0d7de; font-weight: 600; color: #0070d2;">${session?.name || 'Assigned SOC Analyst'}</td>
+          </tr>
         </table>
 
         <h2 style="color: #0969da; font-size: 20px; border-bottom: 1px solid #d0d7de; padding-bottom: 8px; margin-bottom: 16px;">Analyst Notes & Documentation</h2>
