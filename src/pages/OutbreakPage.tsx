@@ -114,7 +114,7 @@ export function OutbreakPage() {
           XDR Investigate
         </Link>
         <Link to="/servicenow/incidents/INC0162850" className="btn">
-          ServiceNow — hubspot.com ticket
+          ServiceNow — False Positives
         </Link>
       </div>
 
@@ -124,7 +124,7 @@ export function OutbreakPage() {
         </div>
         <p className="dash-muted" style={{ padding: "0 12px 8px" }}>
           Entries here reflect MS-ISAC IOC ingest and ServiceNow resolutions. Search for{" "}
-          <code>hubspot.com</code> to verify the marketing false-positive lab ticket INC0162850.
+          <code>hubspot.com</code>, <code>github.com</code>, or <code>quickbooks.intuit.com</code> to verify the false-positive lab tickets (INC0162850, INC0162855, INC0162856).
         </p>
         <div className="amp-blocklist-filters" style={{ padding: "0 12px 8px", display: "flex", gap: 8, flexWrap: "wrap" }}>
           <input
@@ -159,7 +159,7 @@ export function OutbreakPage() {
             </thead>
             <tbody>
               {filtered.slice(0, 50).map((e) => (
-                <tr key={e.id} className={e.value === "hubspot.com" ? "amp-blocklist-highlight" : undefined}>
+                <tr key={e.id} className={["hubspot.com", "github.com", "quickbooks.intuit.com"].includes(e.value) ? "amp-blocklist-highlight" : undefined}>
                   <td>{e.type}</td>
                   <td>
                     <code>{e.type === "hash" ? `${e.value.slice(0, 16)}…` : e.value}</code>

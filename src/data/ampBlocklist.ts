@@ -35,8 +35,12 @@ function entry(
 export function getDefaultAmpBlocklist(): AmpBlocklistEntry[] {
   const ts2203 = "2026-05-26 04:42:21 PM";
   const tsHub = "2026-05-27 11:20:00 AM";
+  const tsGit = "2026-05-28 09:10:00 AM";
+  const tsQb = "2026-05-28 09:42:00 AM";
   const rows: AmpBlocklistEntry[] = [
     entry("domain", "hubspot.com", "Cisco Secure Endpoint — Web Filter", tsHub, "INC0162850"),
+    entry("domain", "github.com", "Cisco Secure Endpoint — Web Filter", tsGit, "INC0162855"),
+    entry("domain", "quickbooks.intuit.com", "Cisco Secure Endpoint — Web Filter", tsQb, "INC0162856"),
   ];
   iocValues(MSISAC_IPS).forEach((ip) => {
     rows.push(entry("ip", ip, "MS-ISAC IOC ingest (INC0162203)", ts2203, "INC0162203"));
@@ -140,6 +144,12 @@ export function applyTicketBlocklist(ticket: SnTicket): AmpBlocklistEntry[] {
   const notes = (ticket.resolutionNotes ?? "").toLowerCase();
   if (ticket.number === "INC0162850" && (notes.includes("false positive") || notes.includes("allow") || notes.includes("unblock"))) {
     return allowEntry("hubspot.com", "domain");
+  }
+  if (ticket.number === "INC0162855" && (notes.includes("false positive") || notes.includes("allow") || notes.includes("unblock"))) {
+    return allowEntry("github.com", "domain");
+  }
+  if (ticket.number === "INC0162856" && (notes.includes("false positive") || notes.includes("allow") || notes.includes("unblock"))) {
+    return allowEntry("quickbooks.intuit.com", "domain");
   }
 
   if (incoming.length === 0) return loadAmpBlocklist();

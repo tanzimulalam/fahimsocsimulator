@@ -3,13 +3,9 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useClassroom } from "./context/ClassroomContext";
 import { AmpChrome } from "./layouts/AmpChrome";
 import { DefenderLayout } from "./layouts/DefenderLayout";
-import { AmpFloatingButton } from "./components/AmpFloatingButton";
-import { NotepadFloatingButton } from "./components/NotepadFloatingButton";
 import { XdrLayout } from "./layouts/XdrLayout";
 import { SentinelLayout } from "./layouts/SentinelLayout";
-import { DefenderFloatingButton } from "./components/defender/DefenderFloatingButton";
-import { XdrFloatingButton } from "./components/xdr/XdrFloatingButton";
-import { SentinelFloatingButton } from "./components/sentinel/SentinelFloatingButton";
+import { GlobalAppSwitcher } from "./components/GlobalAppSwitcher";
 import { SocTutorChatbot } from "./components/SocTutorChatbot";
 import { AnalysisPage } from "./pages/AnalysisPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -57,7 +53,6 @@ import { SentinelWatchlistsPage } from "./pages/sentinel/SentinelWatchlistsPage"
 import { SentinelThreatIntelPage } from "./pages/sentinel/SentinelThreatIntelPage";
 import { SentinelSettingsPage } from "./pages/sentinel/SentinelSettingsPage";
 import { ServiceNowLayout } from "./layouts/ServiceNowLayout";
-import { ServiceNowFloatingButton } from "./components/servicenow/ServiceNowFloatingButton";
 import { ServiceNowIncidentListPage } from "./pages/servicenow/ServiceNowIncidentListPage";
 import { ServiceNowIncidentRecordPage } from "./pages/servicenow/ServiceNowIncidentRecordPage";
 
@@ -203,12 +198,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/inbox" replace />} />
         </Route>
       </Routes>
-      <AmpFloatingButton />
-      <DefenderFloatingButton />
-      <XdrFloatingButton />
-      <SentinelFloatingButton />
-      <ServiceNowFloatingButton />
-      {role === "admin" ? <NotepadFloatingButton /> : null}
+      <GlobalAppSwitcher />
       <SocTutorChatbot />
     </>
   );
