@@ -24,7 +24,7 @@ function uid() {
 export function ServiceNowIncidentRecordPage() {
   const { number } = useParams();
   const navigate = useNavigate();
-  const { session } = useClassroom();
+  const { session, students } = useClassroom();
   const { addNotification } = useSimulator();
 
   const [ticket, setTicket] = useState<SnTicket | null>(null);
@@ -319,16 +319,28 @@ export function ServiceNowIncidentRecordPage() {
           <div className="sn-form-group">
             <label className="sn-label">Assignment group</label>
             <div style={{display: 'flex', gap: 4}}>
-               <input className="sn-input" type="text" value={assignmentGroup} onChange={e => setAssignmentGroup(e.target.value)} />
+               <select className="sn-select" value={assignmentGroup} onChange={e => setAssignmentGroup(e.target.value)}>
+                 <option value="">-- None --</option>
+                 <option value="SOC">SOC</option>
+                 <option value="Network Telephony">Network Telephony</option>
+                 <option value="IT Helpdesk">IT Helpdesk</option>
+                 <option value="ITSS">ITSS</option>
+                 <option value="CISO Office">CISO Office</option>
+               </select>
                <button className="sn-btn" style={{padding: '0 8px'}}>🔍</button>
             </div>
           </div>
           <div className="sn-form-group">
             <label className="sn-label">Assigned to</label>
             <div style={{display: 'flex', gap: 4}}>
-               <input className="sn-input" type="text" value={assignedTo} onChange={e => setAssignedTo(e.target.value)} />
+               <select className="sn-select" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
+                 <option value="">-- None --</option>
+                 {students.map(s => (
+                   <option key={s.id} value={s.name}>{s.name}</option>
+                 ))}
+               </select>
                <button className="sn-btn" style={{padding: '0 8px'}}>🔍</button>
-               <button className="sn-btn" style={{padding: '0 8px'}} onClick={() => setAssignedTo(session?.name || "")}>🙋</button>
+               <button className="sn-btn" style={{padding: '0 8px', fontSize: 14}} onClick={() => setAssignedTo(session?.name || "")} title="Assign to me">🙋</button>
             </div>
           </div>
         </div>
