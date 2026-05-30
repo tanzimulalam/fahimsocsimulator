@@ -11,8 +11,8 @@ export function ServiceNowIncidentListPage() {
   const assignedToFilter = searchParams.get("assignedTo");
   const groupFilter = searchParams.get("group");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortCol, setSortCol] = useState<keyof SnTicket>("openedAt");
-  const [sortDesc, setSortDesc] = useState(true);
+  const [sortCol] = useState<keyof SnTicket>("openedAt");
+  const [sortDesc] = useState(true);
   const [page, setPage] = useState(1);
   const pageSize = 15;
 
