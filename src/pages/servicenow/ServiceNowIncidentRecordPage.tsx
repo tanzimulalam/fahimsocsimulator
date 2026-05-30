@@ -321,6 +321,9 @@ export function ServiceNowIncidentRecordPage() {
             <div style={{display: 'flex', gap: 4}}>
                <select className="sn-select" value={assignmentGroup} onChange={e => setAssignmentGroup(e.target.value)}>
                  <option value="">-- None --</option>
+                 {ticket.assignmentGroup && !["SOC", "Network Telephony", "IT Helpdesk", "ITSS", "CISO Office"].includes(ticket.assignmentGroup) && (
+                   <option value={ticket.assignmentGroup}>{ticket.assignmentGroup}</option>
+                 )}
                  <option value="SOC">SOC</option>
                  <option value="Network Telephony">Network Telephony</option>
                  <option value="IT Helpdesk">IT Helpdesk</option>
@@ -335,6 +338,9 @@ export function ServiceNowIncidentRecordPage() {
             <div style={{display: 'flex', gap: 4}}>
                <select className="sn-select" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
                  <option value="">-- None --</option>
+                 {ticket.assignedTo && !students.some(s => s.name === ticket.assignedTo) && (
+                   <option value={ticket.assignedTo}>{ticket.assignedTo}</option>
+                 )}
                  {students.map(s => (
                    <option key={s.id} value={s.name}>{s.name}</option>
                  ))}
