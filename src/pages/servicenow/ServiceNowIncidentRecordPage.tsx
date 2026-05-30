@@ -152,7 +152,7 @@ export function ServiceNowIncidentRecordPage() {
         authorInitials: "SYS",
         subject: `${ticket.number}: Incident Resolved For - ${ticket.shortDescription}`,
         emailDetails: {
-          from: "DoIT Helpdesk",
+          from: "Data Group Help Desk",
           date: ts,
           to: ticket.email,
           subject: `${ticket.number}: Incident Resolved For - ${ticket.shortDescription}`,
@@ -534,7 +534,7 @@ export function ServiceNowIncidentRecordPage() {
                           {act.type === "email" && (
                             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                               <div style={{ display: "flex" }}><span style={{ width: 60, color: "white", fontWeight: "bold" }}>Subject:</span> <span>{act.subject}</span></div>
-                              <div style={{ display: "flex" }}><span style={{ width: 60, color: "white", fontWeight: "bold" }}>From:</span> <span>DoIT Helpdesk</span></div>
+                              <div style={{ display: "flex" }}><span style={{ width: 60, color: "white", fontWeight: "bold" }}>From:</span> <span>Data Group Help Desk</span></div>
                               <div style={{ display: "flex" }}><span style={{ width: 60, color: "white", fontWeight: "bold" }}>To:</span> <span>{act.emailDetails?.to}</span></div>
                               <button className="link-btn" style={{ fontSize: 11, textAlign: "left", marginTop: 4, color: "#5c9bfa" }} onClick={() => setViewingEmail(act.emailDetails!)}>Show email details</button>
                             </div>
