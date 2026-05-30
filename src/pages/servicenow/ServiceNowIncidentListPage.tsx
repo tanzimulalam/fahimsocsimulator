@@ -57,22 +57,6 @@ export function ServiceNowIncidentListPage() {
   const totalPages = Math.ceil(total / pageSize) || 1;
   const currentData = filteredTickets.slice((page - 1) * pageSize, page * pageSize);
 
-  const handleSort = (col: keyof SnTicket) => {
-    if (sortCol === col) setSortDesc(!sortDesc);
-    else {
-      setSortCol(col);
-      setSortDesc(false);
-    }
-  };
-
-  const activeBreadcrumb = () => {
-    const parts = ["All", "Active = true"];
-    if (assignedToFilter === "me") parts.push(`Assigned to = ${session?.name || 'Me'}`);
-    if (groupFilter === "soc") parts.push("Assignment group = Security Operations Center");
-    if (searchQuery) parts.push(`Search = ${searchQuery}`);
-    return parts.join(" > ");
-  };
-
   return (
     <div className="sn-content">
       <div className="sn-table-wrapper">
@@ -116,8 +100,6 @@ export function ServiceNowIncidentListPage() {
                 <th>State</th>
                 <th>Assignment group</th>
                 <th>Assigned to</th>
-                <th>Updated</th>
-                <th>Updated by</th>
               </tr>
             </thead>
             <tbody>
@@ -134,13 +116,11 @@ export function ServiceNowIncidentListPage() {
                   <td>{t.state}</td>
                   <td style={{ color: "#5c9bfa" }}>{t.assignmentGroup}</td>
                   <td style={{ color: "#5c9bfa" }}>{t.assignedTo}</td>
-                  <td>{t.updatedAt}</td>
-                  <td>{t.updatedBy}</td>
                 </tr>
               ))}
               {currentData.length === 0 && (
                 <tr>
-                  <td colSpan={11} style={{ textAlign: "center", padding: 24, color: "#888" }}>No records to display</td>
+                  <td colSpan={9} style={{ textAlign: "center", padding: 24, color: "#888" }}>No records to display</td>
                 </tr>
               )}
             </tbody>
