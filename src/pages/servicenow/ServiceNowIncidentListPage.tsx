@@ -74,59 +74,78 @@ export function ServiceNowIncidentListPage() {
   };
 
   return (
-    <div>
+    <div className="sn-content">
       <div className="sn-table-wrapper">
-        <div className="sn-table-toolbar">
-          <div className="sn-breadcrumb">
-            {activeBreadcrumb()}
+        <div style={{ backgroundColor: "#292929", padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1a1a1a" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: "white" }}>
+            <span style={{ fontSize: 16 }}>≡</span>
+            <span style={{ color: "#aaa" }}>▼</span>
+            <strong>Incidents</strong>
+            <span style={{ backgroundColor: "#1e1e1e", border: "1px solid #444", padding: "2px 8px", borderRadius: 12, display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}>
+              Assignment group ▼
+            </span>
+            <div style={{ display: "flex", alignItems: "center", backgroundColor: "#111", border: "1px solid #444", borderRadius: 4, overflow: "hidden" }}>
+              <span style={{ padding: "0 6px", color: "#888", borderRight: "1px solid #444" }}>Search</span>
+              <input 
+                type="text" 
+                value={searchQuery} 
+                onChange={e => { setSearchQuery(e.target.value); setPage(1); }} 
+                style={{ background: "transparent", border: "none", color: "white", padding: "2px 6px", width: 120, outline: "none", fontSize: 12 }} 
+              />
+            </div>
           </div>
-          <h2 style={{ margin: 0, fontSize: 16 }}>Incidents ⭐</h2>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input 
-              type="text" 
-              className="sn-filter-input" 
-              placeholder="Search..." 
-              value={searchQuery}
-              onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
-              style={{ width: 200 }}
-            />
-            <button className="sn-btn">Actions on selected rows...</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button className="sn-btn" style={{ padding: "2px 8px", fontSize: 11 }}>Actions on selected rows...</button>
           </div>
         </div>
-        <table className="sn-table">
-          <thead>
-            <tr>
-              <th>☐</th>
-              <th>🔍</th>
-              <th onClick={() => handleSort("number")} style={{cursor: "pointer", userSelect: "none"}}>Number {sortCol === "number" ? (sortDesc ? "▼" : "▲") : ""}</th>
-              <th onClick={() => handleSort("openedAt")} style={{cursor: "pointer", userSelect: "none"}}>Opened {sortCol === "openedAt" ? (sortDesc ? "▼" : "▲") : ""}</th>
-              <th onClick={() => handleSort("shortDescription")} style={{cursor: "pointer", userSelect: "none"}}>Short description {sortCol === "shortDescription" ? (sortDesc ? "▼" : "▲") : ""}</th>
-              <th onClick={() => handleSort("caller")} style={{cursor: "pointer", userSelect: "none"}}>Caller {sortCol === "caller" ? (sortDesc ? "▼" : "▲") : ""}</th>
-              <th onClick={() => handleSort("priority")} style={{cursor: "pointer", userSelect: "none"}}>Priority {sortCol === "priority" ? (sortDesc ? "▼" : "▲") : ""}</th>
-              <th onClick={() => handleSort("state")} style={{cursor: "pointer", userSelect: "none"}}>State {sortCol === "state" ? (sortDesc ? "▼" : "▲") : ""}</th>
-              <th onClick={() => handleSort("assignmentGroup")} style={{cursor: "pointer", userSelect: "none"}}>Assignment group {sortCol === "assignmentGroup" ? (sortDesc ? "▼" : "▲") : ""}</th>
-              <th onClick={() => handleSort("assignedTo")} style={{cursor: "pointer", userSelect: "none"}}>Assigned to {sortCol === "assignedTo" ? (sortDesc ? "▼" : "▲") : ""}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentData.length === 0 ? (
-              <tr><td colSpan={10} style={{textAlign: "center", padding: 20}}>No records to display</td></tr>
-            ) : currentData.map(t => (
-              <tr key={t.number}>
-                <td><input type="checkbox" /></td>
-                <td>ℹ️</td>
-                <td><Link to={`/servicenow/incidents/${t.number}`} style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold" }}>{t.number}</Link></td>
-                <td>{t.openedAt}</td>
-                <td>{t.shortDescription}</td>
-                <td>{t.caller}</td>
-                <td>{t.priority}</td>
-                <td>{t.state}</td>
-                <td>{t.assignmentGroup}</td>
-                <td>{t.assignedTo}</td>
+
+        <div style={{ padding: "8px 12px", fontSize: 11, color: "white", borderBottom: "1px solid #333", backgroundColor: "#2b2b2b" }}>
+          <span style={{ color: "#aaa" }}>All &gt; Active = true &gt;</span> {groupFilter ? `Assignment group = ${groupFilter === 'soc' ? 'Security Operations Center' : 'DOIT'} >` : ''} {assignedToFilter === 'me' ? `Assigned to = ${session?.name || 'Me'} >` : ''}
+        </div>
+
+        <div style={{ overflowX: "auto" }}>
+          <table className="sn-table">
+            <thead>
+              <tr>
+                <th style={{ width: 30, textAlign: "center" }}>🔍</th>
+                <th>Number</th>
+                <th>Opened</th>
+                <th>Short description</th>
+                <th>Caller</th>
+                <th>Priority</th>
+                <th>State</th>
+                <th>Assignment group</th>
+                <th>Assigned to</th>
+                <th>Updated</th>
+                <th>Updated by</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {currentData.map((t, i) => (
+                <tr key={t.number} style={{ backgroundColor: i % 2 === 0 ? "#2b2b2b" : "#2f2f2f" }}>
+                  <td style={{ textAlign: "center", color: "#888" }}>ℹ️</td>
+                  <td>
+                    <Link to={`/servicenow/incidents/${t.number}`} style={{ color: "#5c9bfa", textDecoration: "none" }}>{t.number}</Link>
+                  </td>
+                  <td>{t.openedAt}</td>
+                  <td>{t.shortDescription}</td>
+                  <td style={{ color: "#5c9bfa" }}>{t.caller}</td>
+                  <td>{t.priority}</td>
+                  <td>{t.state}</td>
+                  <td style={{ color: "#5c9bfa" }}>{t.assignmentGroup}</td>
+                  <td style={{ color: "#5c9bfa" }}>{t.assignedTo}</td>
+                  <td>{t.updatedAt}</td>
+                  <td>{t.updatedBy}</td>
+                </tr>
+              ))}
+              {currentData.length === 0 && (
+                <tr>
+                  <td colSpan={11} style={{ textAlign: "center", padding: 24, color: "#888" }}>No records to display</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
         <div className="sn-pagination">
           <span>{total > 0 ? (page - 1) * pageSize + 1 : 0} to {Math.min(page * pageSize, total)} of {total}</span>
           <div className="sn-pagination-arrows">

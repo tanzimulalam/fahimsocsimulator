@@ -216,13 +216,16 @@ export function ServiceNowIncidentRecordPage() {
         <Link to="/servicenow/incidents">Incidents</Link> <span>&gt;</span> {ticket.number}
       </div>
 
-      <div className="sn-record-header">
-        <h2 className="sn-record-title">Incident · {ticket.number} ⭐</h2>
+      <div className="sn-record-header" style={{ backgroundColor: "#292929", padding: "8px 16px", borderBottom: "1px solid #1a1a1a", display: "flex", justifyContent: "space-between" }}>
+        <h2 className="sn-record-title" style={{ fontSize: 16 }}>
+          <span style={{ cursor: "pointer", borderRight: "1px solid #444", paddingRight: 8, marginRight: 8 }}>&lt;</span>
+          Incident - {ticket.number} <span style={{ color: "#facc15" }}>☆</span>
+        </h2>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="sn-btn">Discuss</button>
           <button className="sn-btn">Follow</button>
           <button className="sn-btn" onClick={() => handleSave(true)}>Update</button>
-          <button className="sn-btn" onClick={() => handleSave(false)}>Save</button>
+          <button className="sn-btn sn-btn-primary" onClick={() => handleSave(false)}>Save</button>
           <button className="sn-btn" onClick={handleReopen} disabled={state !== "Resolved" && state !== "Closed"}>Reopen</button>
         </div>
       </div>
@@ -374,76 +377,81 @@ export function ServiceNowIncidentRecordPage() {
         <div className="sn-tab-content">
           {activeTab === "notes" && (
             <div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, marginBottom: 16 }}>
                 <div>
-                  <label className="sn-label" style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span>Work notes (Private)</span>
+                  <label className="sn-label" style={{ display: "flex", justifyContent: "space-between", textAlign: "left", width: "100%", padding: "0 0 4px 0", color: "white", fontSize: 11, fontWeight: "bold" }}>
+                    <span>Watch list 🔍 🧑</span>
+                    <span>Work notes list 🔍 🧑</span>
                   </label>
-                  <textarea className="sn-textarea" rows={3} value={workNotes} onChange={e => setWorkNotes(e.target.value)} style={{ borderLeft: "3px solid #eab308" }} />
                 </div>
-                <div>
-                  <label className="sn-label" style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span>Additional comments (Customer visible)</span>
-                  </label>
-                  <textarea className="sn-textarea" rows={3} value={comments} onChange={e => setComments(e.target.value)} />
+                <div style={{ display: "flex", gap: 12 }}>
+                  <label className="sn-label" style={{ width: 140, textAlign: "left", color: "white", fontSize: 11, fontWeight: "bold" }}>Work notes</label>
+                  <div style={{ flex: 1 }}>
+                    <textarea className="sn-textarea" rows={2} value={workNotes} onChange={e => setWorkNotes(e.target.value)} style={{ border: "1px solid #666", borderLeft: "4px solid #eab308", backgroundColor: "#2b2b2b", borderRadius: 4, width: "100%", padding: "8px" }} placeholder="Work notes" />
+                  </div>
+                  <button className="sn-btn" style={{ padding: "0 8px", height: "fit-content", alignSelf: "center", backgroundColor: "transparent", border: "none", fontSize: 16 }}>✏️</button>
+                </div>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <label className="sn-label" style={{ width: 140, textAlign: "left", color: "white", fontSize: 11, fontWeight: "bold" }}>Additional comments (Customer visible)</label>
+                  <div style={{ flex: 1 }}>
+                    <textarea className="sn-textarea" rows={2} value={comments} onChange={e => setComments(e.target.value)} style={{ border: "1px solid #666", backgroundColor: "#2b2b2b", borderRadius: 4, width: "100%", padding: "8px" }} placeholder="Additional comments (Customer visible)" />
+                  </div>
+                  <button className="sn-btn" style={{ padding: "0 8px", height: "fit-content", alignSelf: "center", backgroundColor: "transparent", border: "none", fontSize: 16 }}>✏️</button>
                 </div>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button className="sn-btn sn-btn-primary" onClick={handlePostNote}>Post</button>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24, paddingRight: 40 }}>
+                <button className="sn-btn" style={{ backgroundColor: "#3a3652", color: "white", border: "none", padding: "4px 16px" }} onClick={handlePostNote}>Post</button>
               </div>
 
-              <div className="sn-activity-stream">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--sn-border)", paddingBottom: 8 }}>
-                  <strong style={{ fontSize: 14 }}>Activities: {ticket.activities.length}</strong>
-                  <button className="sn-btn">⚙️ Filter</button>
+              <div className="sn-activity-stream" style={{ borderTop: "1px solid #444", paddingTop: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 16 }}>
+                  <strong style={{ fontSize: 12, color: "white", marginLeft: 40 }}>Activities: {ticket.activities.length}</strong>
+                  <button className="sn-btn" style={{ fontSize: 14, backgroundColor: "transparent", border: "1px solid #5c9bfa", color: "#5c9bfa", borderRadius: 4 }}>♈</button>
                 </div>
                 
                 {ticket.activities.map(act => {
-                  let badgeColor = "#3b82f6";
                   let borderLeft = "3px solid transparent";
-                  
-                  if (act.type === "work_note") {
-                    badgeColor = "#eab308";
-                    borderLeft = "3px solid #eab308";
-                  } else if (act.type === "field_change" || act.type === "email" || act.type === "attachment") {
-                    badgeColor = "#6b7280";
-                  }
+                  if (act.type === "work_note") borderLeft = "3px solid #eab308";
+                  else if (act.type === "field_change" || act.type === "email" || act.type === "attachment") borderLeft = "3px solid #666";
 
                   return (
-                    <div key={act.id} className="sn-activity-card">
-                      <div className="sn-avatar" style={{ backgroundColor: badgeColor }}>{act.authorInitials}</div>
-                      <div className="sn-activity-body" style={{ borderLeft }}>
-                        <div className="sn-activity-header">
-                          <span><strong>{act.authorName}</strong></span>
-                          <span>{act.timestamp}</span>
+                    <div key={act.id} className="sn-activity-card" style={{ display: "flex", gap: 12, backgroundColor: "transparent", border: "none", marginBottom: 12 }}>
+                      <div style={{ width: 140, textAlign: "right", color: "white", fontSize: 11, fontWeight: "bold", display: "flex", justifyContent: "flex-end", gap: 4 }}>
+                        {act.type === "email" ? "System" : act.authorInitials === "SYS" ? "System" : act.authorName}
+                      </div>
+                      <div style={{ flex: 1, backgroundColor: "#1e1e1e", border: "1px solid #444", borderLeft: borderLeft, borderRadius: 4, padding: "8px 12px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+                            {act.type === "email" ? "✉️" : act.type === "work_note" ? "📓" : act.type === "field_change" ? "🟢" : "👤"}
+                            <strong style={{ color: "white" }}>{act.type === "email" ? "Email sent" : act.type === "field_change" ? "Field changes" : act.type === "work_note" ? "Work notes" : "Additional comments"}</strong>
+                          </span>
+                          <span style={{ fontSize: 11, color: "#aaa" }}>{act.timestamp}</span>
                         </div>
-                        {act.type === "work_note" && (
-                          <div className="sn-activity-content"><strong>Work notes:</strong><br />{act.text}</div>
-                        )}
-                        {act.type === "comment" && (
-                          <div className="sn-activity-content"><strong>Additional comments:</strong><br />{act.text}</div>
-                        )}
-                        {act.type === "field_change" && (
-                          <div className="sn-activity-content field-change">
-                            {act.field}: {act.oldValue} → {act.newValue}
-                          </div>
-                        )}
-                        {act.type === "email" && (
-                          <div className="sn-activity-content">
-                            <strong>System Email:</strong> {act.subject}
-                            <div style={{ marginTop: 8 }}>
-                              <button className="sn-btn" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => setViewingEmail(act.emailDetails)}>Show email details</button>
+                        <div style={{ fontSize: 12, color: "#ccc", marginLeft: 24 }}>
+                          {act.type === "work_note" && <div>{act.text}</div>}
+                          {act.type === "comment" && <div>{act.text}</div>}
+                          {act.type === "field_change" && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              {act.field}: {act.oldValue} ➔ {act.newValue}
                             </div>
-                          </div>
-                        )}
-                        {act.type === "attachment" && (
-                          <div className="sn-activity-content">
-                            <strong>Attachment added:</strong> {act.fileName} ({act.size})
-                            {(act.fileName.endsWith('.xlsx') || act.fileName.endsWith('.csv')) && (
-                              <button className="link-btn" style={{ fontSize: 11, marginLeft: 8 }} onClick={() => setViewingSpreadsheet(act.fileName)}>[open]</button>
-                            )}
-                          </div>
-                        )}
+                          )}
+                          {act.type === "email" && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                              <div style={{ display: "flex" }}><span style={{ width: 60, color: "white", fontWeight: "bold" }}>Subject:</span> <span>{act.subject}</span></div>
+                              <div style={{ display: "flex" }}><span style={{ width: 60, color: "white", fontWeight: "bold" }}>From:</span> <span>DoIT Helpdesk</span></div>
+                              <div style={{ display: "flex" }}><span style={{ width: 60, color: "white", fontWeight: "bold" }}>To:</span> <span>{act.emailDetails?.to}</span></div>
+                              <button className="link-btn" style={{ fontSize: 11, textAlign: "left", marginTop: 4, color: "#5c9bfa" }} onClick={() => setViewingEmail(act.emailDetails!)}>Show email details</button>
+                            </div>
+                          )}
+                          {act.type === "attachment" && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <strong>Attachment added:</strong> {act.fileName} ({act.size})
+                              {(act.fileName.endsWith('.xlsx') || act.fileName.endsWith('.csv')) && (
+                                <button className="link-btn" style={{ fontSize: 11, color: "#5c9bfa" }} onClick={() => setViewingSpreadsheet(act.fileName)}>[open]</button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )
