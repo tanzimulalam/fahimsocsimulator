@@ -229,3 +229,77 @@
 .def-status-chip.remediated { background: rgba(16, 185, 129, 0.14); color: #8ff0c8; }
 .def-status-chip.resolved { background: rgba(37, 99, 235, 0.14); color: #a9c6ff; }
 
+/* ── ITDR (Identities) dashboard ── */
+.def-itdr-hero {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.def-itdr-intro { flex: 1 1 360px; min-width: 280px; }
+
+.def-itdr-shield-wrap {
+  position: relative;
+  flex: 0 0 360px;
+  max-width: 100%;
+  min-width: 300px;
+  height: 300px;
+  margin: 0 auto;
+}
+.def-itdr-shield-svg { width: 300px; height: 290px; display: block; margin: 0 auto; }
+
+.def-itdr-callout {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #161b22;
+  border: 1px solid #2a2f38;
+  border-radius: 8px;
+  padding: 6px 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.def-itdr-bullet { width: 12px; height: 12px; border-radius: 3px; transform: rotate(45deg); flex-shrink: 0; }
+.def-itdr-num { font-size: 18px; font-weight: 800; color: #e6edf3; line-height: 1; }
+.def-itdr-cap { font-size: 11px; color: #9aa4b2; }
+.def-itdr-cloud { top: 6px; left: -8px; }
+.def-itdr-onprem { top: 6px; right: -8px; }
+.def-itdr-hybrid { bottom: 4px; left: 50%; transform: translateX(-50%); }
+
+.def-itdr-insights { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
+@media (max-width: 760px) { .def-itdr-insights { grid-template-columns: 1fr; } }
+.def-itdr-insight {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 6px;
+  background: #11151c;
+  border-left: 4px solid #6b7280;
+}
+.def-itdr-insight.healthy { border-left-color: #2ea88f; }
+.def-itdr-insight.warning { border-left-color: #f59f00; }
+.def-itdr-insight-text { font-size: 13px; color: #e6edf3; }
+.def-itdr-insight-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+.def-itdr-bottom h3 { margin: 0 0 6px; }
+.def-itdr-deploy-row,
+.def-itdr-priv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-top: 1px solid #20262e;
+  font-size: 13px;
+}
+.def-itdr-priv-row { text-decoration: none; color: #e6edf3; }
+.def-itdr-priv-row:hover { color: #9ed6ff; }
+.def-itdr-reco summary { cursor: pointer; color: #9ed6ff; font-size: 13px; margin-top: 8px; }
+
+/* shared connector health dot (also used by ITDR deployment health) */
+.conn-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.conn-dot.ok { background: #2ecc71; }
+.conn-dot.off { background: #6b7280; }
+.conn-dot.stale { background: #f59f00; }
+

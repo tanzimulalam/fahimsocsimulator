@@ -30,6 +30,7 @@ import { DefenderCustomDetectionRulesPage } from "./pages/defender/DefenderCusto
 import { DefenderEmailExplorerPage } from "./pages/defender/DefenderEmailExplorerPage";
 import { DefenderHuntingPage } from "./pages/defender/DefenderHuntingPage";
 import { DefenderIdentitiesUsersPage } from "./pages/defender/DefenderIdentitiesUsersPage";
+import { DefenderIdentitiesDashboardPage } from "./pages/defender/DefenderIdentitiesDashboardPage";
 import { DefenderIncidentDetailPage } from "./pages/defender/DefenderIncidentDetailPage";
 import { DefenderIncidentsPage } from "./pages/defender/DefenderIncidentsPage";
 import { DefenderInvestigationsPage } from "./pages/defender/DefenderInvestigationsPage";
@@ -154,6 +155,8 @@ export default function App() {
           <Route path="actions-submissions" element={<DefenderActionsSubmissionsPage />} />
           <Route path="threat-intelligence" element={<DefenderThreatIntelPage />} />
           <Route path="assets" element={<DefenderAssetsPage />} />
+          <Route path="identities" element={<Navigate to="/defender/identities/dashboard" replace />} />
+          <Route path="identities/dashboard" element={<DefenderIdentitiesDashboardPage />} />
           <Route path="identities/users" element={<DefenderIdentitiesUsersPage />} />
           <Route path="vulnerability-management" element={<DefenderVulnerabilityPage />} />
           <Route path="reports" element={<DefenderReportsPage />} />

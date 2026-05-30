@@ -32,7 +32,10 @@ export function DefenderSidebar() {
 
           <li className="def-nav-head">Assets</li>
           <li><NavLink to="/defender/assets" className={({ isActive }) => "def-nav-link" + (isActive ? " active" : "")}>Devices</NavLink></li>
-          <li><NavLink to="/defender/identities/users" className={({ isActive }) => "def-nav-link" + (isActive ? " active" : "")}>Identities / Users</NavLink></li>
+
+          <li className="def-nav-head">Identities</li>
+          <li><NavLink to="/defender/identities/dashboard" className={({ isActive }) => "def-nav-link" + (isActive ? " active" : "")}>Dashboard</NavLink></li>
+          <li><NavLink to="/defender/identities/users" className={({ isActive }) => "def-nav-link" + (isActive ? " active" : "")}>Users</NavLink></li>
 
           <li className="def-nav-head">Vulnerability management</li>
           <li><NavLink to="/defender/vulnerability-management" className={({ isActive }) => "def-nav-link" + (isActive ? " active" : "")}>Dashboard / recommendations</NavLink></li>

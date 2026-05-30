@@ -38,6 +38,14 @@ export function DefenderIdentitiesUsersPage() {
   const { incidents, getUserState, setUserState } = useDefenderData();
   const [params, setParams] = useSearchParams();
   const selectedUser = params.get("user");
+  const filter = params.get("filter");
+
+  const FILTER_LABEL: Record<string, string> = {
+    dormant: "Dormant accounts in AD that should be removed from sensitive groups",
+    globalAdmin: "Entra ID Global Administrators",
+    securityAdmin: "Entra ID Security Administrators",
+    sensitive: "Identities tagged as sensitive",
+  };
   const [confirm, setConfirm] = useState<{ title: string; body: string; run: () => void } | null>(null);
 
   const inventory = useMemo<InventoryUser[]>(() => {
@@ -88,6 +96,13 @@ export function DefenderIdentitiesUsersPage() {
     <div className="def-page">
       <h1>Identities / Users</h1>
       <p className="dash-muted">{inventory.length} users · investigation priority from Defender for Identity + Entra ID Protection</p>
+
+      {filter && FILTER_LABEL[filter] ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", marginBottom: 12, borderRadius: 6, background: "rgba(245,159,0,0.12)", border: "1px solid rgba(245,159,0,0.4)", color: "#ffd07a", fontSize: 13 }}>
+          <span>Filtered from ITDR Dashboard: <strong>{FILTER_LABEL[filter]}</strong></span>
+          <button className="link-btn" style={{ marginLeft: "auto" }} onClick={() => { const n = new URLSearchParams(params); n.delete("filter"); setParams(n, { replace: true }); }}>Clear filter</button>
+        </div>
+      ) : null}
 
       <div className="panel">
         <div className="table-wrap">

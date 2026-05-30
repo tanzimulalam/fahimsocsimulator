@@ -19,6 +19,7 @@ export const DEFENDER_SENTINEL_LAB_KEYS: string[] = [
   "defender-cloud-apps-v1",
   "defender-attack-sim-v1",
   "defender-settings-v1",
+  "defender-identity-posture-v1",
   // Sentinel
   "sentinel-incidents-v1",
   "sentinel-rules-v1",
