@@ -315,7 +315,7 @@ export function XdrInvestigatePage() {
                   <td><span className={`xdr-action-chip ${r.action}`}>{r.action}</span></td>
                   <td>{r.source}</td>
                   <td>{r.nodeLabel}</td>
-                  <td><code>{r.sha256.slice(0, 20)}...</code></td>
+                  <td><code>{r.sha256 ? r.sha256.slice(0, 20) + "..." : "N/A"}</code></td>
                 </tr>
               ))}
             </tbody>

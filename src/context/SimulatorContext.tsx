@@ -50,14 +50,15 @@ export type ResponseActionKind =
   | "run_av_scan"
   | "playbook_run"
   | "request_remediation"
-  | "mark_safe";
+  | "mark_safe"
+  | "ticket_resolved";
 
 export type ResponseActionRecord = {
   id: string;
   incidentId: string;
   hostLine: string;
-  nodeLabel: string;
-  sha256: string;
+  nodeLabel?: string;
+  sha256?: string;
   source: string;
   action: ResponseActionKind;
   actor: string;
@@ -237,7 +238,7 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
           const incidentActions = responseActionsRef.current.filter((r) => r.incidentId === incidentId);
           const hasIsolation = incidentActions.some((r) => r.action === "isolate_host");
           const blockedHashes = new Set(
-            incidentActions.filter((r) => r.action === "block_sha256").map((r) => r.sha256.toLowerCase())
+            incidentActions.filter((r) => r.action === "block_sha256" && r.sha256).map((r) => r.sha256!.toLowerCase())
           );
           let outcome = resolveScanOutcome(inc, mode);
           let pendingThreatHashes = outcome === "threats_found" ? collectThreatHashesForScanLog(inc) : undefined;

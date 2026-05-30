@@ -56,6 +56,10 @@ import { SentinelAutomationPage } from "./pages/sentinel/SentinelAutomationPage"
 import { SentinelWatchlistsPage } from "./pages/sentinel/SentinelWatchlistsPage";
 import { SentinelThreatIntelPage } from "./pages/sentinel/SentinelThreatIntelPage";
 import { SentinelSettingsPage } from "./pages/sentinel/SentinelSettingsPage";
+import { ServiceNowLayout } from "./layouts/ServiceNowLayout";
+import { ServiceNowFloatingButton } from "./components/servicenow/ServiceNowFloatingButton";
+import { ServiceNowIncidentListPage } from "./pages/servicenow/ServiceNowIncidentListPage";
+import { ServiceNowIncidentRecordPage } from "./pages/servicenow/ServiceNowIncidentRecordPage";
 
 type Role = "admin" | "student";
 
@@ -178,6 +182,12 @@ export default function App() {
           <Route path="settings" element={<SentinelSettingsPage />} />
           <Route path="*" element={<Navigate to="overview" replace />} />
         </Route>
+        <Route path="/servicenow/*" element={<ServiceNowLayout />}>
+          <Route index element={<Navigate to="incidents" replace />} />
+          <Route path="incidents" element={<ServiceNowIncidentListPage />} />
+          <Route path="incidents/:number" element={<ServiceNowIncidentRecordPage />} />
+          <Route path="*" element={<Navigate to="incidents" replace />} />
+        </Route>
         <Route path="/notepad" element={role === "admin" ? <NotepadPage /> : <Navigate to="/inbox" replace />} />
         <Route element={<AmpChrome role={role} onLogout={logout} />}>
           <Route path="/" element={<Navigate to="/inbox" replace />} />
@@ -197,6 +207,7 @@ export default function App() {
       <DefenderFloatingButton />
       <XdrFloatingButton />
       <SentinelFloatingButton />
+      <ServiceNowFloatingButton />
       {role === "admin" ? <NotepadFloatingButton /> : null}
       <SocTutorChatbot />
     </>

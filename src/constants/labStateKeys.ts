@@ -28,4 +28,6 @@ export const DEFENDER_SENTINEL_LAB_KEYS: string[] = [
   "sentinel-bookmarks-v1",
   "sentinel-playbook-runs-v1",
   "sentinel-settings-v1",
+  // ServiceNow
+  "servicenow-tickets-v1",
 ];
