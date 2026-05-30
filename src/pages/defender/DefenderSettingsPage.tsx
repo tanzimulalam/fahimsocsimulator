@@ -1,68 +1,66 @@
-import { useState } from "react";
 import { useSimulator } from "../../context/SimulatorContext";
+import { useLabState } from "../../lib/useLabState";
+
+type SettingsState = {
+  edrBlock: boolean;
+  tamperProtection: boolean;
+  autoInvestigate: boolean;
+  webContentFiltering: boolean;
+  liveResponse: boolean;
+  asrRules: boolean;
+};
+
+const initial: SettingsState = {
+  edrBlock: true,
+  tamperProtection: true,
+  autoInvestigate: true,
+  webContentFiltering: false,
+  liveResponse: true,
+  asrRules: false,
+};
+
+const TOGGLES: { key: keyof SettingsState; label: string; desc: string }[] = [
+  { key: "edrBlock", label: "EDR in block mode", desc: "Block post-breach activity even when AV is in passive mode." },
+  { key: "tamperProtection", label: "Tamper protection", desc: "Prevent malicious apps from disabling Defender." },
+  { key: "autoInvestigate", label: "Automated investigation & response", desc: "Auto-investigate alerts and queue remediation actions." },
+  { key: "webContentFiltering", label: "Web content filtering", desc: "Block categories of unwanted web content." },
+  { key: "liveResponse", label: "Live response", desc: "Allow analysts to run a remote shell on devices." },
+  { key: "asrRules", label: "Attack surface reduction rules", desc: "Block Office child processes, mshta, and script abuse." },
+];
 
 export function DefenderSettingsPage() {
   const { addNotification } = useSimulator();
-  const [liveResponse, setLiveResponse] = useState(true);
-  const [autoInvestigation, setAutoInvestigation] = useState(true);
-  const [tamperProtection, setTamperProtection] = useState(true);
-  const [indicatorBlock, setIndicatorBlock] = useState("203.0.113.44");
+  const [settings, setSettings] = useLabState<SettingsState>("defender-settings-v1", initial);
+
+  const toggle = (key: keyof SettingsState) => setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
     <div className="def-page">
-      <h1>Settings - Endpoints</h1>
-      <div className="panel" style={{ marginBottom: 12 }}>
+      <h1>Settings — Endpoints</h1>
+      <p className="dash-muted">Advanced features and onboarding (persisted, simulated).</p>
+
+      <section className="panel" style={{ marginBottom: 12 }}>
+        <div className="panel-h">Advanced features</div>
+        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+          {TOGGLES.map((t) => (
+            <label key={t.key} className="filter-check" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <input type="checkbox" checked={settings[t.key]} onChange={() => toggle(t.key)} />
+              <span>
+                <strong>{t.label}</strong> {settings[t.key] ? <span className="def-status-chip remediated">On</span> : <span className="def-status-chip">Off</span>}
+                <div className="dash-muted" style={{ fontSize: 12 }}>{t.desc}</div>
+              </span>
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel">
         <div className="panel-h">Onboarding</div>
-        <div className="def-toolbar">
-          <button type="button" className="btn" onClick={() => addNotification("Onboarding", "Windows 10/11 selected.")}>Windows 10/11</button>
-          <button type="button" className="btn" onClick={() => addNotification("Onboarding", "Windows onboarding package downloaded (simulated).")}>Windows script</button>
-          <button type="button" className="btn" onClick={() => addNotification("Onboarding", "macOS onboarding package downloaded (simulated).")}>macOS script</button>
-          <button type="button" className="btn" onClick={() => addNotification("Onboarding", "Linux onboarding package downloaded (simulated).")}>Linux script</button>
-          <button type="button" className="btn" onClick={() => addNotification("Onboarding", "Android onboarding package downloaded (simulated).")}>Android package</button>
+        <div style={{ padding: 12 }}>
+          <p className="dash-muted">Download the onboarding package to deploy the Defender sensor (simulated — no file is created).</p>
+          <button className="btn" onClick={() => addNotification("Onboarding", "Onboarding script download started (simulated).")}>Download onboarding package</button>
         </div>
-      </div>
-
-      <div className="panel" style={{ marginBottom: 12 }}>
-        <div className="panel-h">Permissions & advanced features</div>
-        <div className="def-toolbar">
-          <button type="button" className="btn" onClick={() => addNotification("Permissions", "Role assignments opened (simulated).")}>Permissions</button>
-          <label className="filter-check">
-            <input type="checkbox" checked={liveResponse} onChange={(e) => {
-              setLiveResponse(e.target.checked);
-              addNotification("Feature toggle", `Live Response ${e.target.checked ? "enabled" : "disabled"}.`);
-            }} />
-            Live Response
-          </label>
-          <label className="filter-check">
-            <input type="checkbox" checked={autoInvestigation} onChange={(e) => {
-              setAutoInvestigation(e.target.checked);
-              addNotification("Feature toggle", `Automated Investigation ${e.target.checked ? "enabled" : "disabled"}.`);
-            }} />
-            Automated Investigation
-          </label>
-          <label className="filter-check">
-            <input type="checkbox" checked={tamperProtection} onChange={(e) => {
-              setTamperProtection(e.target.checked);
-              addNotification("Feature toggle", `Tamper Protection ${e.target.checked ? "enabled" : "disabled"}.`);
-            }} />
-            Tamper Protection
-          </label>
-        </div>
-      </div>
-
-      <div className="panel">
-        <div className="panel-h">Indicators (Block/Allow)</div>
-        <div className="def-toolbar">
-          <input className="def-search-inline" value={indicatorBlock} onChange={(e) => setIndicatorBlock(e.target.value)} />
-          <button type="button" className="btn btn-primary" onClick={() => addNotification("Indicator", `${indicatorBlock} added to Block list (simulated).`)}>
-            Block indicator
-          </button>
-          <button type="button" className="btn" onClick={() => addNotification("Indicator", `${indicatorBlock} added to Allow list (simulated).`)}>
-            Allow indicator
-          </button>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }
-

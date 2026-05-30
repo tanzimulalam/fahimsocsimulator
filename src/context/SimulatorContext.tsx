@@ -12,6 +12,7 @@ import type { Incident, IncidentStatus, IncidentWork } from "../types";
 import { INITIAL_INCIDENTS } from "../data/mockData";
 import { collectThreatHashesForScanLog, resolveScanOutcome } from "../lib/scanOutcome";
 import { classroomApi } from "../lib/apiClient";
+import { DEFENDER_SENTINEL_LAB_KEYS } from "../constants/labStateKeys";
 
 const DEFAULT_WORK: IncidentWork = {
   scan: { status: "idle" },
@@ -33,6 +34,24 @@ export type AppActivity = {
   at: number;
 };
 
+export type ResponseActionKind =
+  | "block_sha256"
+  | "allow_sha256"
+  | "isolate_host"
+  | "block_ip"
+  | "release_host"
+  | "collect_package"
+  | "restrict_app"
+  | "block_url"
+  | "mark_user_compromised"
+  | "require_signin"
+  | "revoke_sessions"
+  | "reset_password"
+  | "run_av_scan"
+  | "playbook_run"
+  | "request_remediation"
+  | "mark_safe";
+
 export type ResponseActionRecord = {
   id: string;
   incidentId: string;
@@ -40,9 +59,13 @@ export type ResponseActionRecord = {
   nodeLabel: string;
   sha256: string;
   source: string;
-  action: "block_sha256" | "allow_sha256" | "isolate_host" | "block_ip";
+  action: ResponseActionKind;
   actor: string;
   at: number;
+  /** Optional cross-tool metadata (Defender / Sentinel) — XDR omits these. */
+  tool?: string;
+  label?: string;
+  target?: string;
 };
 
 function cloneIncidents(): Incident[] {
@@ -350,16 +373,21 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
     setLastWorkflowAction(null);
     setResponseActions([]);
     localStorage.removeItem(RESPONSE_ACTIONS_KEY);
+    // Clear all Defender / Sentinel lab-state keys (never the instructor Notepad keys).
+    DEFENDER_SENTINEL_LAB_KEYS.forEach((key) => localStorage.removeItem(key));
+    // Let any mounted Defender/Sentinel views drop their in-memory state immediately.
+    window.dispatchEvent(new Event("lab-state-reset"));
     if (classroomApi.enabled) {
       void Promise.all([
         classroomApi.clearResponseActions(),
         classroomApi.putLabState("default", "simulator-incidents", cloneIncidents()),
         classroomApi.putLabState("default", "incident-work", {}),
+        ...DEFENDER_SENTINEL_LAB_KEYS.map((key) => classroomApi.putLabState("default", key, null)),
       ]).catch((err) => {
         console.warn("Failed to sync simulator reset.", err);
       });
     }
-    addNotification("Reset", "All incidents were restored to their starting state.");
+    addNotification("Reset", "All incidents, Defender, and Sentinel lab progress were restored to baseline.");
   }, [addNotification]);
 
   const toggleSelect = useCallback((id: string) => {

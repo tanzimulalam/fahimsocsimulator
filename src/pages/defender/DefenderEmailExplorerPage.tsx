@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Modal } from "../../components/Modal";
 import { useSimulator } from "../../context/SimulatorContext";
 import { BASE_PHISHING_EMAILS, type MailRecord } from "../../data/defenderEmailLab";
@@ -42,6 +42,7 @@ function loadBlockedDomains(): string[] {
 export function DefenderEmailExplorerPage() {
   const { addNotification, incidents } = useSimulator();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [view, setView] = useState("all");
   const [pivot, setPivot] = useState<PivotKey>("deliveryAction");
   const [summaryTab, setSummaryTab] = useState("Email");
@@ -100,6 +101,15 @@ export function DefenderEmailExplorerPage() {
   }, []);
 
   const activeMail = useMemo(() => mails.find((m) => m.id === activeMailId) ?? null, [mails, activeMailId]);
+
+  // Deep-link: an incident's "Open originating email" button passes ?mail=<id>.
+  useEffect(() => {
+    const mailId = searchParams.get("mail");
+    if (mailId && mails.some((m) => m.id === mailId)) {
+      setActiveMailId(mailId);
+      setPreviewOpen(true);
+    }
+  }, [searchParams, mails]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

@@ -1,0 +1,95 @@
+/* Microsoft Sentinel — Azure-portal accent layered on the Defender shell.
+   Keeps the dark dense look of the Defender simulator (one stack) but swaps
+   the blue brand for Azure blue (#0078D4) and adds a synced banner + FAB. */
+
+.sen-app .def-side-brand,
+.sen-brand {
+  color: #4fc3ff;
+}
+
+.sen-app .def-nav-link.active {
+  border-left-color: #0078d4;
+  color: #9ed6ff;
+}
+
+.sen-workspace {
+  color: #7d8794;
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.sen-avatar {
+  background: #0078d4 !important;
+}
+
+/* Synced-with banner shown on linked incidents (both Defender and Sentinel) */
+.sync-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  background: rgba(0, 120, 212, 0.12);
+  border: 1px solid rgba(0, 120, 212, 0.4);
+  color: #9ed6ff;
+  font-size: 13px;
+}
+.sync-banner .sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2ecc71;
+  flex-shrink: 0;
+}
+
+/* Entity chips */
+.sen-entity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  margin: 2px;
+  border-radius: 999px;
+  border: 1px solid #2a2f38;
+  background: #161b22;
+  font-size: 12px;
+  cursor: pointer;
+  color: #c9d1d9;
+}
+.sen-entity:hover { border-color: #0078d4; }
+.sen-entity .sen-entity-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #7d8794;
+}
+
+/* simple connector health dot */
+.conn-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.conn-dot.ok { background: #2ecc71; }
+.conn-dot.off { background: #6b7280; }
+.conn-dot.stale { background: #f59f00; }
+
+.sentinel-fab {
+  position: fixed;
+  z-index: 2500;
+  bottom: 24px;
+  left: 320px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #0078d4, #005a9e);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+  color: #fff !important;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-align: center;
+  line-height: 1.1;
+}
+.sentinel-fab:hover { transform: scale(1.03); }
+.sentinel-fab-inner { pointer-events: none; }

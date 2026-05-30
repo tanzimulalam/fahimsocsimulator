@@ -6,8 +6,10 @@ import { DefenderLayout } from "./layouts/DefenderLayout";
 import { AmpFloatingButton } from "./components/AmpFloatingButton";
 import { NotepadFloatingButton } from "./components/NotepadFloatingButton";
 import { XdrLayout } from "./layouts/XdrLayout";
+import { SentinelLayout } from "./layouts/SentinelLayout";
 import { DefenderFloatingButton } from "./components/defender/DefenderFloatingButton";
 import { XdrFloatingButton } from "./components/xdr/XdrFloatingButton";
+import { SentinelFloatingButton } from "./components/sentinel/SentinelFloatingButton";
 import { SocTutorChatbot } from "./components/SocTutorChatbot";
 import { AnalysisPage } from "./pages/AnalysisPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -42,6 +44,17 @@ import { StudentDeskPage } from "./pages/StudentDeskPage";
 import { XdrControlCenterPage } from "./pages/xdr/XdrControlCenterPage";
 import { XdrIncidentsPage } from "./pages/xdr/XdrIncidentsPage";
 import { XdrInvestigatePage } from "./pages/xdr/XdrInvestigatePage";
+import { SentinelOverviewPage } from "./pages/sentinel/SentinelOverviewPage";
+import { SentinelIncidentsPage } from "./pages/sentinel/SentinelIncidentsPage";
+import { SentinelAnalyticsPage } from "./pages/sentinel/SentinelAnalyticsPage";
+import { SentinelLogsPage } from "./pages/sentinel/SentinelLogsPage";
+import { SentinelHuntingPage } from "./pages/sentinel/SentinelHuntingPage";
+import { SentinelDataConnectorsPage } from "./pages/sentinel/SentinelDataConnectorsPage";
+import { SentinelWorkbooksPage } from "./pages/sentinel/SentinelWorkbooksPage";
+import { SentinelAutomationPage } from "./pages/sentinel/SentinelAutomationPage";
+import { SentinelWatchlistsPage } from "./pages/sentinel/SentinelWatchlistsPage";
+import { SentinelThreatIntelPage } from "./pages/sentinel/SentinelThreatIntelPage";
+import { SentinelSettingsPage } from "./pages/sentinel/SentinelSettingsPage";
 
 type Role = "admin" | "student";
 
@@ -147,6 +160,21 @@ export default function App() {
           <Route path="settings/endpoints" element={<DefenderSettingsPage />} />
           <Route path="*" element={<Navigate to="home" replace />} />
         </Route>
+        <Route path="/sentinel/*" element={<SentinelLayout />}>
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<SentinelOverviewPage />} />
+          <Route path="incidents" element={<SentinelIncidentsPage />} />
+          <Route path="analytics" element={<SentinelAnalyticsPage />} />
+          <Route path="logs" element={<SentinelLogsPage />} />
+          <Route path="hunting" element={<SentinelHuntingPage />} />
+          <Route path="data-connectors" element={<SentinelDataConnectorsPage />} />
+          <Route path="workbooks" element={<SentinelWorkbooksPage />} />
+          <Route path="automation" element={<SentinelAutomationPage />} />
+          <Route path="watchlists" element={<SentinelWatchlistsPage />} />
+          <Route path="threat-intelligence" element={<SentinelThreatIntelPage />} />
+          <Route path="settings" element={<SentinelSettingsPage />} />
+          <Route path="*" element={<Navigate to="overview" replace />} />
+        </Route>
         <Route path="/notepad" element={role === "admin" ? <NotepadPage /> : <Navigate to="/inbox" replace />} />
         <Route element={<AmpChrome role={role} onLogout={logout} />}>
           <Route path="/" element={<Navigate to="/inbox" replace />} />
@@ -165,6 +193,7 @@ export default function App() {
       <AmpFloatingButton />
       <DefenderFloatingButton />
       <XdrFloatingButton />
+      <SentinelFloatingButton />
       {role === "admin" ? <NotepadFloatingButton /> : null}
       <SocTutorChatbot />
     </>
