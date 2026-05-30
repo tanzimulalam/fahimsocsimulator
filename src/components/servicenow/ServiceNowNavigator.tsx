@@ -10,7 +10,7 @@ export function ServiceNowNavigator() {
     <nav className="sn-sidebar">
       <div className="sn-sidebar-header">
         <span style={{ fontSize: 18 }}>🏛</span> 
-        <span style={{ flex: 1, letterSpacing: 0.5 }}>UNC<br/><span style={{fontSize: 9, fontWeight: 'normal'}}>PEMBROKE</span></span>
+        <span style={{ flex: 1, letterSpacing: 0.5 }}>Data Group</span>
         <span style={{ fontSize: 12 }}>Favorites</span>
       </div>
       <div className="sn-filter-box">
@@ -35,7 +35,7 @@ export function ServiceNowNavigator() {
           {doitExpanded && (
             <div className="sn-nav-items">
               <NavLink to="/servicenow/incidents" className={({isActive}) => `sn-nav-item ${isActive ? "active" : ""}`}>
-                <span style={{ color: "#ef4444" }}>⭐</span> Bravetech Tickets
+                <span style={{ color: "#ef4444" }}>⭐</span> Data Group Help Desk tickets
               </NavLink>
               <NavLink to="/servicenow/service-desk" className="sn-nav-item">
                 <span style={{ color: "#3b82f6" }}>⭐</span> Service Desk
