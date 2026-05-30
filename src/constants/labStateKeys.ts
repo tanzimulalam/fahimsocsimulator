@@ -29,5 +29,7 @@ export const DEFENDER_SENTINEL_LAB_KEYS: string[] = [
   "sentinel-playbook-runs-v1",
   "sentinel-settings-v1",
   // ServiceNow
-  "servicenow-tickets-v1",
+  "servicenow-tickets-v2",
+  // AMP cross-tool blocklist
+  "amp-blocklist-v1",
 ];

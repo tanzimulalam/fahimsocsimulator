@@ -388,7 +388,7 @@ export function SimulatorProvider({ children }: { children: ReactNode }) {
         console.warn("Failed to sync simulator reset.", err);
       });
     }
-    addNotification("Reset", "All incidents, Defender, and Sentinel lab progress were restored to baseline.");
+    addNotification("Reset", "All incidents, Defender, Sentinel, ServiceNow, and AMP lab progress were restored to baseline.");
   }, [addNotification]);
 
   const toggleSelect = useCallback((id: string) => {

@@ -12,6 +12,7 @@ import {
   type SnActivityEntry,
   type SnEmail
 } from "../../data/serviceNowTickets";
+import { applyTicketBlocklist, getBlockedEntries, isBlocked } from "../../data/ampBlocklist";
 import { useClassroom } from "../../context/ClassroomContext";
 import { useSimulator } from "../../context/SimulatorContext";
 import { ServiceNowEmailViewer } from "../../components/servicenow/ServiceNowEmailViewer";
@@ -25,7 +26,7 @@ export function ServiceNowIncidentRecordPage() {
   const { number } = useParams();
   const navigate = useNavigate();
   const { session, students } = useClassroom();
-  const { addNotification } = useSimulator();
+  const { addNotification, logResponseAction } = useSimulator();
 
   const [ticket, setTicket] = useState<SnTicket | null>(null);
   const [activeTab, setActiveTab] = useState("notes");
@@ -65,9 +66,14 @@ export function ServiceNowIncidentRecordPage() {
     }
   }, [number]);
 
-  if (!ticket) return <div style={{padding: 20}}>Loading ticket...</div>;
+  if (!ticket) return <div className="sn-loading">Loading ticket…</div>;
 
   const derivedPriority = derivePriority(impact, urgency);
+  const ampDomains = [
+    ...(ticket.ampPreBlockedDomains ?? []),
+    ...(ticket.ampBlocklist?.domains ?? []),
+  ];
+  const hubspotBlocked = ampDomains.includes("hubspot.com") && isBlocked("hubspot.com", "domain");
 
   const handleSave = (returnToList = false) => {
     // Check resolve conditions
@@ -116,24 +122,44 @@ export function ServiceNowIncidentRecordPage() {
     if (state === "Resolved" && ticket.state !== "Resolved") {
       resolvedBy = authorName;
       resolvedAt = ts;
-      
+
+      newActivities.push({
+        id: uid(),
+        timestamp: ts,
+        type: "field_change",
+        authorName,
+        authorInitials: initials,
+        field: "Resolution code",
+        oldValue: ticket.resolutionCode ?? "",
+        newValue: resolutionCode,
+      });
+      newActivities.push({
+        id: uid(),
+        timestamp: ts,
+        type: "field_change",
+        authorName,
+        authorInitials: initials,
+        field: "Resolution notes",
+        oldValue: ticket.resolutionNotes ?? "",
+        newValue: resolutionNotes,
+      });
+
       newActivities.push({
         id: uid(),
         timestamp: ts,
         type: "email",
         authorName: "System",
         authorInitials: "SYS",
-        subject: `Incident Resolved For - ${ticket.shortDescription}`,
+        subject: `${ticket.number}: Incident Resolved For - ${ticket.shortDescription}`,
         emailDetails: {
           from: "DoIT Helpdesk",
           date: ts,
           to: ticket.email,
-          subject: `Incident Resolved For - ${ticket.shortDescription}`,
-          bodyHtml: `<p>Your incident ${ticket.number} has been resolved.</p><p>Resolution Notes:</p><p>${resolutionNotes}</p>`
-        }
+          subject: `${ticket.number}: Incident Resolved For - ${ticket.shortDescription}`,
+          bodyHtml: `<p>Your incident ${ticket.number} has been resolved.</p><p>Resolution Notes:</p><p>${resolutionNotes}</p>`,
+        },
       });
 
-      
       addNotification("Incident Resolved", `Ticket ${ticket.number} marked resolved.`);
     }
 
@@ -149,12 +175,42 @@ export function ServiceNowIncidentRecordPage() {
       resolutionNotes,
       resolvedBy,
       resolvedAt,
-      activities: [...newActivities, ...ticket.activities]
+      activities: [...newActivities, ...ticket.activities],
     };
 
     all[idx] = updatedTicket;
     saveServiceNowTickets(all);
     setTicket(updatedTicket);
+
+    if (state === "Resolved" && ticket.state !== "Resolved") {
+      applyTicketBlocklist(updatedTicket);
+      if (updatedTicket.ampBlocklist?.domains?.length || updatedTicket.importMsisacWeek) {
+        logResponseAction({
+          incidentId: updatedTicket.number,
+          hostLine: updatedTicket.configurationItem || updatedTicket.shortDescription.slice(0, 60),
+          source: "ServiceNow",
+          action: "block_url",
+          actor: authorName,
+          tool: "Cisco Secure Endpoint",
+          label: "IOCs synced to AMP block list",
+          target: updatedTicket.number,
+        });
+        addNotification("AMP Integration", `IOCs from ${updatedTicket.number} pushed to AMP Outbreak Control block list.`);
+      }
+      if (updatedTicket.number === "INC0162850" && resolutionNotes.toLowerCase().includes("false positive")) {
+        logResponseAction({
+          incidentId: updatedTicket.number,
+          hostLine: "hubspot.com",
+          source: "ServiceNow",
+          action: "block_url",
+          actor: authorName,
+          tool: "Cisco Secure Endpoint",
+          label: "hubspot.com allowed (false positive)",
+          target: "hubspot.com",
+        });
+        addNotification("AMP Integration", "hubspot.com allowed — check AMP Outbreak Control block list.");
+      }
+    }
 
     if (returnToList) {
       navigate("/servicenow/incidents");
@@ -211,26 +267,54 @@ export function ServiceNowIncidentRecordPage() {
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-      <div className="sn-breadcrumb" style={{ marginBottom: 16 }}>
+    <div className="sn-record-page">
+      <div className="sn-breadcrumb">
         <Link to="/servicenow/incidents">Incidents</Link> <span>&gt;</span> {ticket.number}
       </div>
 
-      <div className="sn-record-header" style={{ backgroundColor: "#292929", padding: "8px 16px", borderBottom: "1px solid #1a1a1a", display: "flex", justifyContent: "space-between" }}>
-        <h2 className="sn-record-title" style={{ fontSize: 16 }}>
-          <span style={{ cursor: "pointer", borderRight: "1px solid #444", paddingRight: 8, marginRight: 8 }}>&lt;</span>
-          Incident - {ticket.number} <span style={{ color: "#facc15" }}>☆</span>
+      <div className="sn-record-header-bar">
+        <h2 className="sn-record-title">
+          <Link to="/servicenow/incidents" className="sn-back-link">
+            &lt;
+          </Link>
+          Incident — {ticket.number} <span className="sn-star">☆</span>
         </h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="sn-btn">Discuss</button>
-          <button className="sn-btn">Follow</button>
-          <button className="sn-btn" onClick={() => handleSave(true)}>Update</button>
-          <button className="sn-btn sn-btn-primary" onClick={() => handleSave(false)}>Save</button>
-          <button className="sn-btn" onClick={handleReopen} disabled={state !== "Resolved" && state !== "Closed"}>Reopen</button>
+        <div className="sn-record-actions">
+          <button type="button" className="sn-btn">
+            Discuss
+          </button>
+          <button type="button" className="sn-btn">
+            Follow
+          </button>
+          <button type="button" className="sn-btn" onClick={() => handleSave(true)}>
+            Update
+          </button>
+          <button type="button" className="sn-btn sn-btn-primary" onClick={() => handleSave(false)}>
+            Save
+          </button>
+          <button type="button" className="sn-btn" onClick={handleReopen} disabled={state !== "Resolved" && state !== "Closed"}>
+            Reopen
+          </button>
         </div>
       </div>
 
-      <div className="sn-form-container">
+      {ticket.relatedEmail && (
+        <div className="sn-email-preview">
+          <button type="button" className="link-btn sn-email-preview-link" onClick={() => setViewingEmail(ticket.relatedEmail!)}>
+            Click here to view the full details of the email
+          </button>
+          <div className="sn-email-meta">
+            <div>
+              <strong>From:</strong> {ticket.relatedEmail.from}
+            </div>
+            <div>
+              <strong>Subject:</strong> {ticket.relatedEmail.subject}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="sn-form-container sn-record-form">
         {/* Left Column */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="sn-form-group">
@@ -319,32 +403,26 @@ export function ServiceNowIncidentRecordPage() {
           <div className="sn-form-group">
             <label className="sn-label">Assignment group</label>
             <div style={{display: 'flex', gap: 4}}>
-               <select className="sn-select" value={assignmentGroup} onChange={e => setAssignmentGroup(e.target.value)}>
-                 <option value="">-- None --</option>
-                 {ticket.assignmentGroup && !["SOC", "Network Telephony", "IT Helpdesk", "ITSS", "CISO Office"].includes(ticket.assignmentGroup) && (
-                   <option value={ticket.assignmentGroup}>{ticket.assignmentGroup}</option>
-                 )}
-                 <option value="SOC">SOC</option>
-                 <option value="Network Telephony">Network Telephony</option>
-                 <option value="IT Helpdesk">IT Helpdesk</option>
-                 <option value="ITSS">ITSS</option>
-                 <option value="CISO Office">CISO Office</option>
-               </select>
+               <input className="sn-input" type="text" list="group-list" value={assignmentGroup} onChange={e => setAssignmentGroup(e.target.value)} />
+               <datalist id="group-list">
+                 <option value="SOC" />
+                 <option value="Network Telephony" />
+                 <option value="IT Helpdesk" />
+                 <option value="ITSS" />
+                 <option value="CISO Office" />
+               </datalist>
                <button className="sn-btn" style={{padding: '0 8px'}}>🔍</button>
             </div>
           </div>
           <div className="sn-form-group">
             <label className="sn-label">Assigned to</label>
             <div style={{display: 'flex', gap: 4}}>
-               <select className="sn-select" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
-                 <option value="">-- None --</option>
-                 {ticket.assignedTo && !students.some(s => s.name === ticket.assignedTo) && (
-                   <option value={ticket.assignedTo}>{ticket.assignedTo}</option>
-                 )}
+               <input className="sn-input" type="text" list="student-list" value={assignedTo} onChange={e => setAssignedTo(e.target.value)} />
+               <datalist id="student-list">
                  {students.map(s => (
-                   <option key={s.id} value={s.name}>{s.name}</option>
+                   <option key={s.id} value={s.name} />
                  ))}
-               </select>
+               </datalist>
                <button className="sn-btn" style={{padding: '0 8px'}}>🔍</button>
                <button className="sn-btn" style={{padding: '0 8px', fontSize: 14}} onClick={() => setAssignedTo(session?.name || "")} title="Assign to me">🙋</button>
             </div>
@@ -479,32 +557,73 @@ export function ServiceNowIncidentRecordPage() {
           )}
 
           {activeTab === "related" && (
-            <div className="sn-form-container">
-              <div className="sn-form-group">
-                <label className="sn-label">Parent Incident</label>
-                <div style={{display: 'flex', gap: 4}}><input className="sn-input" type="text" disabled /><button className="sn-btn" style={{padding: '0 8px'}} disabled>🔍</button></div>
+            <div className="sn-related-panel">
+              <div className="sn-form-container">
+                <div className="sn-form-group">
+                  <label className="sn-label">Parent Incident</label>
+                  <div className="sn-lookup-row">
+                    <input className="sn-input" type="text" disabled />
+                    <button type="button" className="sn-btn sn-btn-icon" disabled>
+                      🔍
+                    </button>
+                  </div>
+                </div>
+                <div className="sn-form-group">
+                  <label className="sn-label">Problem</label>
+                  <div className="sn-lookup-row">
+                    <input className="sn-input" type="text" disabled />
+                    <button type="button" className="sn-btn sn-btn-icon" disabled>
+                      🔍
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="sn-form-group">
-                <label className="sn-label">Problem</label>
-                <div style={{display: 'flex', gap: 4}}><input className="sn-input" type="text" disabled /><button className="sn-btn" style={{padding: '0 8px'}} disabled>🔍</button></div>
-              </div>
-              <div className="sn-form-group">
-                <label className="sn-label">Change Request</label>
-                <div style={{display: 'flex', gap: 4}}><input className="sn-input" type="text" disabled /><button className="sn-btn" style={{padding: '0 8px'}} disabled>🔍</button></div>
-              </div>
-              <div className="sn-form-group">
-                <label className="sn-label">Caused by Change</label>
-                <div style={{display: 'flex', gap: 4}}><input className="sn-input" type="text" disabled /><button className="sn-btn" style={{padding: '0 8px'}} disabled>🔍</button></div>
-              </div>
-              
-              {ticket.linkedXdrIncidentId && (
-                <div className="sn-form-group full-width" style={{ marginTop: 16 }}>
-                  <label className="sn-label">Integrated Security Alerts</label>
-                  <Link to={`/xdr/investigate?incident=${ticket.linkedXdrIncidentId}`} className="sn-btn" style={{ display: "inline-block", width: "fit-content", textDecoration: "none" }}>
-                    🛡️ Open related Cisco XDR case
+
+              <div className="sn-integration-section">
+                <h4>Integrated Security Tools</h4>
+                <p className="sn-integration-hint">
+                  Cross-tool links reflect the same investigation across AMP, XDR, Defender, and Sentinel.
+                </p>
+                <div className="sn-integration-links">
+                  {ticket.linkedXdrIncidentId && (
+                    <Link to={`/xdr/investigate?incident=${ticket.linkedXdrIncidentId}`} className="sn-integration-chip">
+                      Cisco XDR — {ticket.linkedXdrIncidentId}
+                    </Link>
+                  )}
+                  {ticket.linkedDefenderIncidentId && (
+                    <Link to={`/defender/incidents/${ticket.linkedDefenderIncidentId}`} className="sn-integration-chip">
+                      Defender — {ticket.linkedDefenderIncidentId}
+                    </Link>
+                  )}
+                  {ticket.linkedSentinelIncidentId && (
+                    <Link to={`/sentinel/incidents/${ticket.linkedSentinelIncidentId}`} className="sn-integration-chip">
+                      Sentinel — {ticket.linkedSentinelIncidentId}
+                    </Link>
+                  )}
+                  <Link to="/outbreak#blocklist" className="sn-integration-chip sn-integration-chip-amp">
+                    AMP Block List ({getBlockedEntries().length} entries)
                   </Link>
                 </div>
-              )}
+
+                {(ampDomains.length > 0 || ticket.importMsisacWeek) && (
+                  <div className="sn-amp-status">
+                    <strong>AMP block list status</strong>
+                    <ul>
+                      {ampDomains.map((d) => (
+                        <li key={d}>
+                          <code>{d}</code> — {isBlocked(d, "domain") ? "Blocked in AMP" : "Not blocked"}
+                          {d === "hubspot.com" && hubspotBlocked && (
+                            <span className="sn-badge-warn"> (verify false positive in Outbreak Control)</span>
+                          )}
+                        </li>
+                      ))}
+                      {ticket.importMsisacWeek && (
+                        <li>MS-ISAC week {ticket.importMsisacWeek} IOCs — {ticket.state === "Resolved" ? "ingested into AMP" : "pending resolve"}</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

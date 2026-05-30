@@ -80,6 +80,13 @@ export type SnActivityEntry =
   | SnActivityEmail
   | SnActivityAttachment;
 
+export type SnAmpBlocklistRef = {
+  domains?: string[];
+  urls?: string[];
+  ips?: string[];
+  hashes?: string[];
+};
+
 export type SnTicket = {
   number: string;
   openedAt: string;
@@ -107,6 +114,14 @@ export type SnTicket = {
   resolvedBy?: string;
   resolvedAt?: string;
   linkedXdrIncidentId?: string;
+  linkedDefenderIncidentId?: string;
+  linkedSentinelIncidentId?: string;
+  /** IOCs to push into AMP blocklist when ticket is resolved. */
+  ampBlocklist?: SnAmpBlocklistRef;
+  /** Import MS-ISAC spreadsheet IOC set on resolve (1 = week of 4/20, 2 = week of 4/27). */
+  importMsisacWeek?: 1 | 2;
+  /** Domains already blocked in AMP before ticket resolution (e.g. false positives). */
+  ampPreBlockedDomains?: string[];
   relatedEmail?: SnEmail;
 };
 
@@ -135,9 +150,9 @@ export function derivePriority(impact: SnImpact, urgency: SnUrgency): SnPriority
 export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
   {
     number: "INC0162203",
-    openedAt: "2026-04-27 02:07:29 PM",
-    shortDescription: "FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/20/26 – 4/26/26 - TLP:AMBER",
-    description: "Please see the forwarded threat intelligence email regarding malicious IPs and Domains.",
+    openedAt: "2026-04-27",
+    shortDescription: "FW: [EXTERNAL]Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/20/26 - 4/26/26 - TLP:AMBER",
+    description: "Forwarded MS-ISAC weekly threat intelligence. Review attached spreadsheet and ingest IOCs into firewall, proxy, and Cisco Secure Endpoint blocklists.",
     caller: "Bari Snyder",
     email: "Bari.Snyder@uncp.edu",
     phone: "9107754994",
@@ -147,42 +162,47 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
     businessServices: "",
     configurationItem: "",
     channel: "Email/Chat",
-    state: "New",
-    impact: "2 - Medium",
+    state: "Resolved",
+    impact: "3 - Low",
     urgency: "3 - Low",
-    priority: "4 - Low",
+    priority: "5 - Planning",
     assignmentGroup: "Network & Telephony",
     assignedTo: "Shirsendu Mondal",
+    importMsisacWeek: 1,
+    resolutionCode: "Solved (Permanently)",
+    resolutionNotes: "Blocked Malicious SHAs and Domains",
+    resolvedBy: "Shirsendu Mondal",
+    resolvedAt: "2026-05-26 04:42:21 PM",
     attachments: [
       { id: "att-1", name: "IPs Domains and URLs of Interest 2026-04-20 to 2026-04-26.xlsx", size: "49.5 KB", type: "file", isSpreadsheet: true },
-      { id: "att-2", name: "image001.png", size: "9.79 KB", type: "image", isSpreadsheet: false }
+      { id: "att-2", name: "image001.png", size: "9.79 KB", type: "image", isSpreadsheet: false },
+      { id: "att-2b", name: "image002.png", size: "1.84 KB", type: "image", isSpreadsheet: false },
+      { id: "att-2c", name: "image003.png", size: "3.03 KB", type: "image", isSpreadsheet: false },
+      { id: "att-2d", name: "image004.png", size: "1.72 KB", type: "image", isSpreadsheet: false },
     ],
     relatedEmail: {
-      from: "MS-ISAC Advisory <MS-ISAC.Advisory@msisac.org>",
-      date: "Monday, April 27, 2026 2:06:57 PM (UTC-05:00) Eastern Time",
-      subject: "[EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/20/26 – 4/26/26 - TLP:AMBER",
+      from: "MS-ISAC Advisory <MS-ISAC_Advisory@msisac.org>",
+      date: "Monday, April 27, 2026 2:06:57 PM (UTC-05:00) Eastern Time (US & Canada)",
+      subject: "[EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/20/26 - 4/26/26 - TLP:AMBER",
       to: "Bari.Snyder@uncp.edu",
       bodyHtml: `
-        <div style="font-family: sans-serif; font-size: 14px;">
-          <div style="background-color: #ffcccc; padding: 10px; border: 1px solid #cc0000; margin-bottom: 15px;">
-            <strong>CAUTION:</strong> This email originated from outside of the organization. Do not click links or open attachments unless you recognize the sender and know the content is safe.
+        <div style="font-family: sans-serif; font-size: 14px; line-height: 1.5;">
+          <p><a href="#">Click here to view the full details of the email</a></p>
+          <p><em>forwarded by: Bari.Snyder@uncp.edu</em></p>
+          <div style="background-color: #ffcccc; padding: 10px; border: 1px solid #cc0000; margin: 12px 0;">
+            <strong>CAUTION: External Sender</strong> — This email originated from outside of UNCP. Do NOT click on links or open files from senders you do not trust.
           </div>
           <p style="color: #cc6600; font-weight: bold;">TLP:AMBER</p>
-          <p>This week's malicious IPs, Domains, and URLs observed by MS-ISAC monitoring and CIS CTI.</p>
-          <p>Please review the attached spreadsheet and take necessary actions to block or alert on these indicators. Pay close attention to any internal hosts communicating with these external entities.</p>
-          <p>Note: IP and domain relationships may change quickly (e.g., fast-flux DNS, shared hosting). Ensure indicators are aged out after 4 weeks.</p>
-          <p>CIS Portal automated format links:<br>
+          <p>This advisory contains malicious IPs, domains, and URLs observed by MS-ISAC monitoring and CIS CTI between April 20 and April 26, 2026.</p>
+          <p><strong>Recommendations:</strong> Consider blocking and alerting on these IOCs. Check source hosts for signs of infection if traffic to these IOCs is found. Remove indicators from blocklists no later than 4 weeks after their last appearance.</p>
+          <p>CIS CTI automated lists:<br>
           <a href="#">cti-lists.cisecurity.org/lists/IPs-30days.txt</a><br>
           <a href="#">cti-lists.cisecurity.org/lists/Domains-30days.txt</a><br>
           <a href="#">cti-lists.cisecurity.org/lists/URLs-30days.txt</a><br>
           <a href="#">cti-lists.cisecurity.org/lists/Hashes-1year.txt</a></p>
-          <p>MS-ISAC 24x7 SOC Contact:<br>
-          Phone: 1-866-787-4722<br>
-          Email: soc@cisecurity.org</p>
-          <p>Center for Internet Security (CIS)<br>
-          Clifton Park, NY 12065</p>
+          <p>MS-ISAC 24x7 SOC: soc@cisecurity.org · 1-866-787-4722</p>
         </div>
-      `
+      `,
     },
     activities: [
       {
@@ -191,31 +211,102 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
         type: "email",
         authorName: "System",
         authorInitials: "SYS",
-        subject: "FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/20/26 – 4/26/26 - TLP:AMBER",
+        subject: "FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/20/26 - 4/26/26 - TLP:AMBER",
         emailDetails: {
           from: "Bari.Snyder@uncp.edu",
           date: "2026-04-27 02:07:29 PM",
-          subject: "FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/20/26 – 4/26/26 - TLP:AMBER",
-          to: "DoIT Helpdesk",
-          bodyHtml: "<p>Please process these new IOCs.</p>"
-        }
+          subject: "FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/20/26 - 4/26/26 - TLP:AMBER",
+          to: "helpdesk@uncp.edu",
+          bodyHtml: "<p>Please process these new IOCs.</p>",
+        },
       },
       {
         id: "act-2",
-        timestamp: "2026-04-27 02:07:31 PM",
+        timestamp: "2026-04-20",
         type: "attachment",
         authorName: "System",
         authorInitials: "SYS",
         fileName: "IPs Domains and URLs of Interest 2026-04-20 to 2026-04-26.xlsx",
-        size: "49.5 KB"
-      }
-    ]
+        size: "49.5 KB",
+      },
+      {
+        id: "act-2b",
+        timestamp: "2026-05-20 09:15:00 AM",
+        type: "work_note",
+        authorName: "Shirsendu Mondal",
+        authorInitials: "SM",
+        text: "Started IOC review. Downloaded spreadsheet and cross-referenced against Sentinel and AMP logs.",
+      },
+      {
+        id: "act-2c",
+        timestamp: "2026-05-24 02:30:00 PM",
+        type: "field_change",
+        authorName: "Shirsendu Mondal",
+        authorInitials: "SM",
+        field: "Incident state",
+        oldValue: "New",
+        newValue: "In Progress",
+      },
+      {
+        id: "act-3",
+        timestamp: "2026-05-26 04:42:21 PM",
+        type: "field_change",
+        authorName: "Shirsendu Mondal",
+        authorInitials: "SM",
+        field: "Incident state",
+        oldValue: "In Progress",
+        newValue: "Resolved",
+      },
+      {
+        id: "act-4",
+        timestamp: "2026-05-26 04:42:21 PM",
+        type: "field_change",
+        authorName: "Shirsendu Mondal",
+        authorInitials: "SM",
+        field: "Resolution code",
+        oldValue: "",
+        newValue: "Solved (Permanently)",
+      },
+      {
+        id: "act-5",
+        timestamp: "2026-05-26 04:42:21 PM",
+        type: "field_change",
+        authorName: "Shirsendu Mondal",
+        authorInitials: "SM",
+        field: "Resolution notes",
+        oldValue: "",
+        newValue: "Blocked Malicious SHAs and Domains",
+      },
+      {
+        id: "act-6",
+        timestamp: "2026-05-26 04:42:21 PM",
+        type: "email",
+        authorName: "System",
+        authorInitials: "SYS",
+        subject: "INC0162203: Incident Resolved For - FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/20/26 - 4/26/26 - TLP:AMBER",
+        emailDetails: {
+          from: "DoIT Helpdesk",
+          date: "2026-05-26 04:42:21 PM",
+          to: "Bari.Snyder@uncp.edu",
+          subject: "INC0162203: Incident Resolved For - FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/20/26 - 4/26/26 - TLP:AMBER",
+          bodyHtml: "<p>Your incident has been resolved. Resolution notes: Blocked Malicious SHAs and Domains</p>",
+        },
+      },
+      {
+        id: "act-7",
+        timestamp: "2026-05-26 04:45:00 PM",
+        type: "work_note",
+        authorName: "Shirsendu Mondal",
+        authorInitials: "SM",
+        text: "Part 6 done",
+      },
+    ],
   },
   {
     number: "INC0162675",
-    openedAt: "2026-05-04 02:13:09 PM",
-    shortDescription: "FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/27/26 – 5/3/26 - TLP:AMBER",
-    description: "Please see the forwarded threat intelligence email regarding malicious IPs and Domains.",
+    openedAt: "2026-05-04",
+    shortDescription: "FW: [EXTERNAL]Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/27/26 - 5/3/26 - TLP:AMBER",
+    description: "Weekly MS-ISAC IOC feed for April 27 through May 3. Ingest new indicators and age out indicators from prior weeks per MS-ISAC guidance.",
     caller: "Bari Snyder",
     email: "Bari.Snyder@uncp.edu",
     phone: "9107754994",
@@ -225,73 +316,125 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
     businessServices: "",
     configurationItem: "",
     channel: "Email/Chat",
-    state: "New",
-    impact: "2 - Medium",
+    state: "Resolved",
+    impact: "3 - Low",
     urgency: "3 - Low",
-    priority: "4 - Low",
+    priority: "5 - Planning",
     assignmentGroup: "Network & Telephony",
     assignedTo: "Shirsendu Mondal",
+    importMsisacWeek: 2,
+    resolutionCode: "Solved (Permanently)",
+    resolutionNotes: "Blocked Malicious SHAs and Domains",
+    resolvedBy: "Shirsendu Mondal",
+    resolvedAt: "2026-05-26 05:10:00 PM",
     attachments: [
-      { id: "att-3", name: "IPs Domains and URLs of Interest 2026-04-27 to 2026-05-03.xlsx", size: "48.2 KB", type: "file", isSpreadsheet: true }
+      { id: "att-3", name: "IPs Domains and URLs of Interest 2026-04-27 to 2026-05-03.xlsx", size: "48.2 KB", type: "file", isSpreadsheet: true },
     ],
+    relatedEmail: {
+      from: "MS-ISAC Advisory <MS-ISAC_Advisory@msisac.org>",
+      date: "Monday, May 4, 2026 2:13:09 PM (UTC-05:00) Eastern Time (US & Canada)",
+      subject: "[EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/27/26 - 5/3/26 - TLP:AMBER",
+      to: "Bari.Snyder@uncp.edu",
+      bodyHtml: `<p style="color:#cc6600;font-weight:bold">TLP:AMBER</p><p>New weekly IOCs attached. Review and block as appropriate.</p>`,
+    },
     activities: [
       {
-        id: "act-3",
+        id: "act-8",
         timestamp: "2026-05-04 02:13:09 PM",
         type: "email",
         authorName: "System",
         authorInitials: "SYS",
-        subject: "FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/27/26 – 5/3/26 - TLP:AMBER",
+        subject: "FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/27/26 - 5/3/26 - TLP:AMBER",
         emailDetails: {
           from: "Bari.Snyder@uncp.edu",
           date: "2026-05-04 02:13:09 PM",
-          subject: "FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/27/26 – 5/3/26 - TLP:AMBER",
-          to: "DoIT Helpdesk",
-          bodyHtml: "<p>New weekly IOCs.</p>"
-        }
-      }
-    ]
+          subject: "FW: [EXTERNAL] Malicious IPs, Domains, and URLs observed by MS-ISAC - 4/27/26 - 5/3/26 - TLP:AMBER",
+          to: "helpdesk@uncp.edu",
+          bodyHtml: "<p>New weekly IOCs.</p>",
+        },
+      },
+      {
+        id: "act-9",
+        timestamp: "2026-05-26 05:10:00 PM",
+        type: "field_change",
+        authorName: "Shirsendu Mondal",
+        authorInitials: "SM",
+        field: "Incident state",
+        oldValue: "In Progress",
+        newValue: "Resolved",
+      },
+      {
+        id: "act-10",
+        timestamp: "2026-05-26 05:10:00 PM",
+        type: "field_change",
+        authorName: "Shirsendu Mondal",
+        authorInitials: "SM",
+        field: "Resolution notes",
+        oldValue: "",
+        newValue: "Blocked Malicious SHAs and Domains",
+      },
+    ],
   },
   {
     number: "INC0162810",
     openedAt: "2026-05-26 09:14:00 AM",
     shortDescription: "Suspicious email with attachment reported by Sarah Chen",
-    description: "User reported receiving a strange email appearing to be from Microsoft, asking to update her credentials. She clicked the link and downloaded an attachment. Device is hr-laptop-04.",
+    description: "User reported receiving a strange email appearing to be from Microsoft, asking to update her credentials. She clicked the link and downloaded an attachment. Device is HR-LAPTOP-04. Cisco XDR case INC-XDR-001 and Defender incident DINC-0001 opened automatically.",
     caller: "Sarah Chen",
-    email: "sarah.chen@datagroup.local",
+    email: "sarah.chen@uncp.edu",
     phone: "555-0192",
-    location: "HR Department",
+    location: "HR Department — Oxendine Admin Bldg",
     category: "Security",
     subcategory: "Phishing",
     businessServices: "Corporate Email",
-    configurationItem: "hr-laptop-04",
+    configurationItem: "HR-LAPTOP-04",
     channel: "Phone",
-    state: "New",
+    state: "In Progress",
     impact: "1 - High",
     urgency: "1 - High",
     priority: "1 - Critical",
     assignmentGroup: "Security Operations Center",
-    assignedTo: "",
+    assignedTo: "Shirsendu Mondal",
     attachments: [],
-    linkedXdrIncidentId: "INC-XDR-001", // AsyncRAT
+    linkedXdrIncidentId: "INC-XDR-001",
+    linkedDefenderIncidentId: "DINC-0001",
+    linkedSentinelIncidentId: "SENT-3001",
     activities: [
       {
-        id: "act-4",
+        id: "act-11",
         timestamp: "2026-05-26 09:14:00 AM",
         type: "work_note",
         authorName: "Helpdesk Agent",
         authorInitials: "HA",
-        text: "User called in panicking. Advised user to disconnect from network. Escalating to SOC."
-      }
-    ]
+        text: "User called in panicking. Advised user to disconnect from network. Escalating to SOC.",
+      },
+      {
+        id: "act-12",
+        timestamp: "2026-05-26 09:22:00 AM",
+        type: "field_change",
+        authorName: "System",
+        authorInitials: "SYS",
+        field: "Incident state",
+        oldValue: "New",
+        newValue: "In Progress",
+      },
+      {
+        id: "act-13",
+        timestamp: "2026-05-26 09:30:00 AM",
+        type: "work_note",
+        authorName: "Shirsendu Mondal",
+        authorInitials: "SM",
+        text: "Pivoting to Cisco XDR and Defender. AsyncRAT hash b2a965c5… detected on HR-LAPTOP-04.",
+      },
+    ],
   },
   {
     number: "INC0162822",
     openedAt: "2026-05-26 10:30:45 AM",
     shortDescription: "EDR Alert: Emotet Loader Detected on SALES-VM-22",
-    description: "Automated ticket creation from Cisco Secure Endpoint. Emotet payload detected executing via PowerShell macro on SALES-VM-22.",
+    description: "Automated ticket from Cisco Secure Endpoint. Emotet payload detected executing via PowerShell macro on SALES-VM-22. Linked to Defender DINC-0002 and XDR INC-XDR-005.",
     caller: "System",
-    email: "alerts@datagroup.local",
+    email: "alerts@uncp.edu",
     phone: "",
     location: "Datacenter",
     category: "Security",
@@ -306,16 +449,27 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
     assignmentGroup: "Security Operations Center",
     assignedTo: "Shirsendu Mondal",
     attachments: [],
-    linkedXdrIncidentId: "INC-XDR-005", // Emotet
-    activities: []
+    linkedXdrIncidentId: "INC-XDR-005",
+    linkedDefenderIncidentId: "DINC-0002",
+    linkedSentinelIncidentId: "SENT-3002",
+    activities: [
+      {
+        id: "act-14",
+        timestamp: "2026-05-26 10:30:45 AM",
+        type: "work_note",
+        authorName: "System",
+        authorInitials: "SYS",
+        text: "Auto-created from AMP retrospective event on SALES-VM-22.",
+      },
+    ],
   },
   {
     number: "INC0162845",
     openedAt: "2026-05-27 08:15:22 AM",
     shortDescription: "Multiple failed RDP logins for MdUsman, followed by successful login",
-    description: "SIEM detected anomalous RDP brute force behavior. Account may be compromised. Investigate LAB-WS-0142.",
+    description: "Sentinel analytic rule SENT-3004 correlated 847 failed RDP attempts followed by a successful login from 194.165.16.78 to LAB-WS-0142. Investigate for account compromise.",
     caller: "Security Monitoring",
-    email: "soc-alerts@datagroup.local",
+    email: "soc-alerts@uncp.edu",
     phone: "",
     location: "Campus Lab",
     category: "Security",
@@ -330,16 +484,17 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
     assignmentGroup: "Security Operations Center",
     assignedTo: "",
     attachments: [],
-    linkedXdrIncidentId: "INC-XDR-009", // RDP Brute force
-    activities: []
+    linkedXdrIncidentId: "INC-XDR-009",
+    linkedSentinelIncidentId: "SENT-3004",
+    activities: [],
   },
   {
     number: "INC0162850",
     openedAt: "2026-05-27 11:22:10 AM",
-    shortDescription: "Blocked access to legitimate marketing site",
-    description: "User cannot access hubspot.com. AMP blocked it as suspicious.",
+    shortDescription: "Blocked access to legitimate marketing site — hubspot.com blocked by AMP",
+    description: "Marketing team reports hubspot.com is unreachable. Cisco Secure Endpoint Web Filter blocked hubspot.com as suspicious (category: newly registered domain heuristic). Verify in AMP Outbreak Control block list and allow if false positive.",
     caller: "Marketing Team",
-    email: "marketing@datagroup.local",
+    email: "marketing@uncp.edu",
     phone: "555-0341",
     location: "Building B",
     category: "Network & Telephony",
@@ -354,11 +509,132 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
     assignmentGroup: "Security Operations Center",
     assignedTo: "",
     attachments: [],
-    activities: []
-  }
+    ampPreBlockedDomains: ["hubspot.com"],
+    activities: [
+      {
+        id: "act-15",
+        timestamp: "2026-05-27 11:22:10 AM",
+        type: "work_note",
+        authorName: "System",
+        authorInitials: "SYS",
+        text: "AMP Web Filter event: hubspot.com blocked on 14 endpoints in Marketing group.",
+      },
+    ],
+  },
+  {
+    number: "INC0162861",
+    openedAt: "2026-05-28 07:45:00 AM",
+    shortDescription: "Sentinel incident SENT-3003 — impossible travel sign-in for svc_backup",
+    description: "Microsoft Sentinel correlated impossible travel: svc_backup authenticated from Clifton Park NY and Bucharest RO within 12 minutes. Review identity risk in Defender and disable account if confirmed compromise.",
+    caller: "Security Monitoring",
+    email: "soc-alerts@uncp.edu",
+    phone: "",
+    location: "Identity Services",
+    category: "Security",
+    subcategory: "Identity",
+    businessServices: "Azure AD",
+    configurationItem: "svc_backup",
+    channel: "System",
+    state: "In Progress",
+    impact: "1 - High",
+    urgency: "2 - Medium",
+    priority: "2 - High",
+    assignmentGroup: "Security Operations Center",
+    assignedTo: "Shirsendu Mondal",
+    attachments: [],
+    linkedSentinelIncidentId: "SENT-3003",
+    linkedDefenderIncidentId: "DINC-0005",
+    activities: [
+      {
+        id: "act-16",
+        timestamp: "2026-05-28 07:50:00 AM",
+        type: "work_note",
+        authorName: "Shirsendu Mondal",
+        authorInitials: "SM",
+        text: "Opened Sentinel incident SENT-3003. Running KQL hunt for svc_backup sign-ins last 72h.",
+      },
+    ],
+  },
+  {
+    number: "INC0162875",
+    openedAt: "2026-05-28 02:15:00 PM",
+    shortDescription: "BEC attempt — CFO wire transfer request from spoofed domain",
+    description: "Finance received email from ceo-review@secure-login.portal-update.net requesting urgent wire transfer. Domain matches MS-ISAC IOC list. Block domain in AMP and purge mailbox.",
+    caller: "Finance Department",
+    email: "finance@uncp.edu",
+    phone: "555-0188",
+    location: "Finance Office",
+    category: "Security",
+    subcategory: "Phishing",
+    businessServices: "Corporate Email",
+    configurationItem: "",
+    channel: "Email/Chat",
+    state: "New",
+    impact: "1 - High",
+    urgency: "1 - High",
+    priority: "1 - Critical",
+    assignmentGroup: "Security Operations Center",
+    assignedTo: "",
+    attachments: [],
+    ampBlocklist: { domains: ["secure-login.portal-update.net"] },
+    linkedDefenderIncidentId: "DINC-0001",
+    activities: [],
+  },
+  {
+    number: "INC0162888",
+    openedAt: "2026-05-29 09:00:00 AM",
+    shortDescription: "Request to block ScreenConnect abuse domains from MS-ISAC feed",
+    description: "IR team requests immediate block of ScreenConnect subdomains identified in INC0162203 spreadsheet (ad.screenconnect.com, allgreenlandscape.screenconnect.com). Confirm entries exist in AMP block list.",
+    caller: "Incident Response",
+    email: "ir-team@uncp.edu",
+    phone: "",
+    location: "SOC",
+    category: "Security",
+    subcategory: "Threat Intelligence",
+    businessServices: "",
+    configurationItem: "",
+    channel: "Email/Chat",
+    state: "New",
+    impact: "2 - Medium",
+    urgency: "2 - Medium",
+    priority: "3 - Moderate",
+    assignmentGroup: "Security Operations Center",
+    assignedTo: "",
+    attachments: [],
+    ampBlocklist: {
+      domains: ["ad.screenconnect.com", "allgreenlandscape.screenconnect.com", "ancomsystems.screenconnect.com"],
+    },
+    activities: [],
+  },
+  {
+    number: "INC0162898",
+    openedAt: "2026-05-29 11:30:00 AM",
+    shortDescription: "AMP retrospective alert — suspicious PowerShell on FIN-EXEC-01",
+    description: "Cisco Secure Endpoint flagged encoded PowerShell on FIN-EXEC-01. Cross-reference with WannaCry incident DINC-0003 and isolate if encryption behavior confirmed.",
+    caller: "System",
+    email: "alerts@uncp.edu",
+    phone: "",
+    location: "Finance Segment",
+    category: "Security",
+    subcategory: "Malware",
+    businessServices: "Endpoint Security",
+    configurationItem: "FIN-EXEC-01",
+    channel: "System",
+    state: "New",
+    impact: "1 - High",
+    urgency: "1 - High",
+    priority: "1 - Critical",
+    assignmentGroup: "Security Operations Center",
+    assignedTo: "",
+    attachments: [],
+    linkedXdrIncidentId: "INC-XDR-004",
+    linkedDefenderIncidentId: "DINC-0003",
+    linkedSentinelIncidentId: "SENT-3005",
+    activities: [],
+  },
 ];
 
-export const SERVICENOW_TICKETS_KEY = "servicenow-tickets-v1";
+export const SERVICENOW_TICKETS_KEY = "servicenow-tickets-v2";
 
 export function loadServiceNowTickets(): SnTicket[] {
   const raw = localStorage.getItem(SERVICENOW_TICKETS_KEY);

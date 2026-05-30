@@ -608,6 +608,15 @@ button.user-pill:hover {
   text-align: left;
 }
 
+.data-table tr.amp-blocklist-highlight td {
+  background: rgba(250, 204, 21, 0.12);
+}
+
+.data-table tr.amp-blocklist-highlight code {
+  color: #facc15;
+  font-weight: 600;
+}
+
 .data-table th {
   color: var(--text-muted);
   font-weight: 600;
