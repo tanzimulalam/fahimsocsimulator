@@ -310,7 +310,13 @@ securityEvent.push(
   { TimeGenerated: "2026-05-29T02:47:00Z", EventID: 4624, Account: "administrator", Computer: "LAB-WS-0142", IpAddress: "45.155.205.233", Activity: "An account was successfully logged on" },
   { TimeGenerated: "2026-05-28T14:20:00Z", EventID: 7045, Account: "administrator", Computer: "DEV-SERVER-03", IpAddress: "10.0.0.44", Activity: "A service was installed: PSEXESVC" },
   { TimeGenerated: "2026-05-29T07:45:00Z", EventID: 4688, Account: "administrator", Computer: "DC01", IpAddress: "10.0.0.10", Activity: "comsvcs.dll MiniDump lsass" },
-  { TimeGenerated: "2026-05-29T06:05:00Z", EventID: 4769, Account: "svc_sql", Computer: "DC01", IpAddress: "10.20.1.12", Activity: "Kerberos service ticket requested (0x17)" }
+  { TimeGenerated: "2026-05-29T06:05:00Z", EventID: 4769, Account: "svc_sql", Computer: "DC01", IpAddress: "10.20.1.12", Activity: "Kerberos service ticket requested (0x17)" },
+  // Syncing with XDR Incidents for teaching:
+  { TimeGenerated: "2026-05-29T10:15:00Z", EventID: 4688, Account: "sarah.chen", Computer: "hr-laptop-04", IpAddress: "185.234.218.116", Activity: "A new process has been created: AsyncRAT.exe" },
+  { TimeGenerated: "2026-05-27T19:35:00Z", EventID: 4688, Account: "m.rodriguez", Computer: "FIN-EXEC-01", IpAddress: "10.4.12.55", Activity: "A new process has been created: @WanaDecryptor" },
+  { TimeGenerated: "2026-05-27T19:36:00Z", EventID: 4688, Account: "m.rodriguez", Computer: "FIN-EXEC-01", IpAddress: "-", Activity: "vssadmin.exe delete shadows" },
+  { TimeGenerated: "2026-05-28T09:12:00Z", EventID: 4688, Account: "dapqa", Computer: "POLC-MJ0LQLRR", IpAddress: "151.101.65.91", Activity: "reg.exe save hklm\\system" },
+  { TimeGenerated: "2026-05-28T09:15:00Z", EventID: 4688, Account: "dapqa", Computer: "POLC-MJ0LQLRR", IpAddress: "151.101.65.91", Activity: "mshta.exe spawned by explorer.exe" }
 );
 
 const signinLogs: KqlRow[] = [
@@ -321,19 +327,23 @@ const signinLogs: KqlRow[] = [
 ];
 
 const securityAlert: KqlRow[] = [
-  { TimeGenerated: "2026-05-29T12:58:00Z", AlertName: "Suspicious mshta.exe spawned a remote access tool", AlertSeverity: "High", ProviderName: "MDATP", Entities: "HR-LAPTOP-04;AsyncRAT.exe" },
-  { TimeGenerated: "2026-05-27T19:30:00Z", AlertName: "Ransomware behavior detected", AlertSeverity: "High", ProviderName: "MDATP", Entities: "FIN-EXEC-01" },
+  { TimeGenerated: "2026-05-29T12:58:00Z", AlertName: "Suspicious mshta.exe spawned a remote access tool", AlertSeverity: "High", ProviderName: "Cisco Secure Endpoint", Entities: "HR-LAPTOP-04;AsyncRAT.exe" },
+  { TimeGenerated: "2026-05-27T19:30:00Z", AlertName: "Ransomware behavior detected", AlertSeverity: "High", ProviderName: "Cisco XDR", Entities: "FIN-EXEC-01;@WanaDecryptor" },
   { TimeGenerated: "2026-05-29T02:18:00Z", AlertName: "MFA fatigue", AlertSeverity: "High", ProviderName: "IPC", Entities: "elena.fisher@contoso.com" },
+  { TimeGenerated: "2026-05-28T09:20:00Z", AlertName: "Mimikatz Credential Dumping", AlertSeverity: "High", ProviderName: "CrowdStrike Falcon", Entities: "POLC-MJ0LQLRR;reg.exe" },
+  { TimeGenerated: "2026-05-29T10:15:00Z", AlertName: "Malicious Attachment Execution", AlertSeverity: "High", ProviderName: "Cisco Secure Endpoint", Entities: "SALES-VM-22;Emotet.dll" },
 ];
 
 const commonSecurityLog: KqlRow[] = [
   { TimeGenerated: "2026-05-27T19:40:00Z", DeviceVendor: "Palo Alto Networks", DeviceProduct: "IDS", SourceIP: "10.5.0.7", DestinationIP: "10.5.0.20", Activity: "EternalBlue SMB exploit attempt" },
   { TimeGenerated: "2026-05-28T11:40:00Z", DeviceVendor: "Palo Alto Networks", DeviceProduct: "Firewall", SourceIP: "10.8.0.3", DestinationIP: "203.0.113.47", Activity: "Allowed outbound 443" },
+  { TimeGenerated: "2026-05-28T14:15:00Z", DeviceVendor: "Cisco", DeviceProduct: "Firepower", SourceIP: "10.109.0.61", DestinationIP: "8.8.8.8", Activity: "DNS Tunneling Pattern Detected" },
 ];
 
 const deviceEventsSentinel: KqlRow[] = [
   { TimeGenerated: "2026-05-29T07:45:00Z", DeviceName: "DC01", ActionType: "ProcessCreated", ProcessCommandLine: "rundll32 comsvcs.dll MiniDump", RemoteUrl: "", RemoteIP: "" },
   { TimeGenerated: "2026-05-29T13:05:00Z", DeviceName: "HR-LAPTOP-04", ActionType: "ConnectionSuccess", ProcessCommandLine: "AsyncRAT.exe", RemoteUrl: "", RemoteIP: "185.234.218.116" },
+  { TimeGenerated: "2026-05-27T19:32:00Z", DeviceName: "FIN-EXEC-01", ActionType: "FileCreated", ProcessCommandLine: "mssecsvc.exe", RemoteUrl: "", RemoteIP: "" },
   ...Array.from({ length: 30 }, (_, i) => ({
     TimeGenerated: plusMin("2026-05-28T21:10:00Z", i * 5),
     DeviceName: "RND-WS-09",

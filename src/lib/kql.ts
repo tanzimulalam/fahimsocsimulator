@@ -135,14 +135,16 @@ export function runKql(query: string, tables: KqlTables): KqlResult {
   }
 
   const tableName = segments[0];
-  const sourceRows = tables[tableName];
+  // Common typo: SecurityEvents instead of SecurityEvent
+  const actualTableName = tableName.toLowerCase() === "securityevents" ? "SecurityEvent" : tableName;
+  const sourceRows = tables[actualTableName];
   if (!sourceRows) {
     const available = Object.keys(tables).join(", ");
     return {
       columns: [],
       rows: [],
       rowsScanned: 0,
-      error: `Unknown table "${tableName}". Available tables: ${available}`,
+      error: `Syntax Error: Every KQL query must start with a valid table name (e.g., SecurityEvent). Unknown table "${tableName}". Available tables: ${available}`,
     };
   }
 
@@ -158,6 +160,11 @@ export function runKql(query: string, tables: KqlTables): KqlResult {
       if (lower.startsWith("where ")) {
         const expr = seg.slice("where ".length);
         rows = rows.filter((r) => evalWhere(r, expr));
+      } else if (lower.startsWith("search ")) {
+        const keyword = stripQuotes(seg.slice("search ".length));
+        rows = rows.filter((r) => {
+          return Object.values(r).some(v => String(v).toLowerCase().includes(keyword.toLowerCase()));
+        });
       } else if (lower.startsWith("summarize ")) {
         const body = seg.slice("summarize ".length);
         const byIdx = body.toLowerCase().indexOf(" by ");
