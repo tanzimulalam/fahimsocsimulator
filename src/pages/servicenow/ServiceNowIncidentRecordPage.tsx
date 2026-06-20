@@ -210,6 +210,32 @@ export function ServiceNowIncidentRecordPage() {
         });
         addNotification("AMP Integration", "hubspot.com allowed — check AMP Outbreak Control block list.");
       }
+      if (updatedTicket.number === "INC0162855" && (resolutionNotes.toLowerCase().includes("false positive") || resolutionNotes.toLowerCase().includes("allow") || resolutionNotes.toLowerCase().includes("unblock"))) {
+        logResponseAction({
+          incidentId: updatedTicket.number,
+          hostLine: "github.com",
+          source: "ServiceNow",
+          action: "block_url",
+          actor: authorName,
+          tool: "Cisco Secure Endpoint",
+          label: "github.com allowed (false positive)",
+          target: "github.com",
+        });
+        addNotification("AMP Integration", "github.com allowed — check AMP Outbreak Control block list.");
+      }
+      if (updatedTicket.number === "INC0162856" && (resolutionNotes.toLowerCase().includes("false positive") || resolutionNotes.toLowerCase().includes("allow") || resolutionNotes.toLowerCase().includes("unblock"))) {
+        logResponseAction({
+          incidentId: updatedTicket.number,
+          hostLine: "quickbooks.intuit.com",
+          source: "ServiceNow",
+          action: "block_url",
+          actor: authorName,
+          tool: "Cisco Secure Endpoint",
+          label: "quickbooks.intuit.com allowed (false positive)",
+          target: "quickbooks.intuit.com",
+        });
+        addNotification("AMP Integration", "quickbooks.intuit.com allowed — check AMP Outbreak Control block list.");
+      }
       if (updatedTicket.number === "INC0162945" && resolutionNotes.toLowerCase().includes("false positive")) {
         logResponseAction({
           incidentId: updatedTicket.number,
