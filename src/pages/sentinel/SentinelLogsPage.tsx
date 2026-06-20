@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useSentinelData } from "../../context/SentinelDataContext";
 import { useSimulator } from "../../context/SimulatorContext";
 import { runKql, type KqlResult } from "../../lib/kql";
-import { SENTINEL_LOG_SCHEMA, SENTINEL_LOG_TABLES, SENTINEL_SAMPLE_QUERIES } from "../../data/sentinelData";
+import { SENTINEL_LOG_SCHEMA, SENTINEL_LOG_TABLES, SENTINEL_SAMPLE_QUERIES, SENTINEL_TRAINING_SCENARIOS } from "../../data/sentinelData";
 
 export function SentinelLogsPage() {
   const { addBookmark } = useSentinelData();
@@ -32,19 +32,25 @@ export function SentinelLogsPage() {
       <div className="panel" style={{ backgroundColor: "rgba(0, 120, 212, 0.1)", borderLeft: "4px solid #0078D4", padding: "12px 16px", marginBottom: "16px" }}>
         <h4 style={{ margin: "0 0 8px 0", color: "#0078D4" }}>🎓 KQL Learning Guide</h4>
         <ul style={{ margin: 0, paddingLeft: 20, fontSize: "14px", lineHeight: "1.5" }}>
-          <li><strong>Rule 1:</strong> Start with a table name (e.g., <code>SecurityEvent</code> or <code>DeviceEvents</code>).</li>
-          <li><strong>Rule 2:</strong> Use the pipe symbol <code>|</code> to chain commands. (e.g., <code>SecurityEvent | search "4625"</code>)</li>
-          <li><strong>Rule 3:</strong> Use <code>| where EventID == 4625</code> to filter for specific Event IDs.</li>
-          <li><strong>Rule 4:</strong> Use <code>| summarize count() by Account</code> to group and count occurrences.</li>
-          <li><strong>Rule 5:</strong> Try clicking one of the <strong>Sample queries</strong> on the left to see KQL in action!</li>
+          <li><strong>Rule 1:</strong> Start with a table name (e.g., <code>SecurityEvent</code>).</li>
+          <li><strong>Rule 2:</strong> Use <code>|</code> to chain commands. (e.g., <code>SecurityEvent | search "4625"</code>)</li>
+          <li><strong>Rule 3:</strong> Use <code>| extend NewCol = "Value"</code> to create new columns on the fly.</li>
+          <li><strong>Rule 4:</strong> Use <code>| project-away EventID</code> to hide certain columns from the results.</li>
+          <li><strong>Rule 5:</strong> Try the <strong>Training Scenarios</strong> on the left to test your skills!</li>
         </ul>
       </div>
 
       <div className="def-hunt-layout">
         <aside className="panel def-hunt-schema">
-          <div className="panel-h">Schema & sample queries</div>
+          <div className="panel-h">Schema & Scenarios</div>
           <div style={{ padding: 10, maxHeight: 520, overflow: "auto" }}>
-            <h4 style={{ margin: "0 0 6px" }}>Sample queries</h4>
+            <h4 style={{ margin: "0 0 6px" }}>Training Scenarios</h4>
+            {SENTINEL_TRAINING_SCENARIOS.map((ts) => (
+              <button key={ts.id} className="link-btn" style={{ display: "block", textAlign: "left", marginBottom: 6, color: "#107c10", fontWeight: 600 }} onClick={() => { setQuery(ts.query); setResult(null); }} title={ts.description}>
+                {ts.name}
+              </button>
+            ))}
+            <h4 style={{ margin: "12px 0 6px" }}>Sample queries</h4>
             {SENTINEL_SAMPLE_QUERIES.map((q) => (
               <button key={q.id} className="link-btn" style={{ display: "block", textAlign: "left", marginBottom: 6 }} onClick={() => { setQuery(q.query); setResult(null); }} title={q.description}>
                 {q.name}

@@ -388,6 +388,13 @@ export const SENTINEL_SAMPLE_QUERIES: SentinelSavedQuery[] = [
   { id: "sq8", name: "Kerberoasting TGS spike", description: "RC4 service ticket requests.", tactic: "CredentialAccess", query: 'SecurityEvent\n| where EventID == 4769\n| summarize count() by Account' },
 ];
 
+export const SENTINEL_TRAINING_SCENARIOS: SentinelSavedQuery[] = [
+  { id: "ts1", name: "Challenge 1: Find the Brute Force IP", description: "An attacker is trying to guess passwords. Find the IP that generated more than 20 failed logins (EventID 4625).", tactic: "CredentialAccess", query: 'SecurityEvent\n| where EventID == 4625\n| summarize FailedLogins = count() by IpAddress\n| where FailedLogins > 20' },
+  { id: "ts2", name: "Challenge 2: Detect Data Exfiltration", description: "Look for DNS tunneling. Find the domain receiving an unusually high volume of DNS queries from our internal network.", tactic: "Exfiltration", query: 'DeviceEvents\n| where ActionType == "DnsQuery"\n| extend SuspiciousDomain = RemoteUrl\n| summarize QueryCount = count() by SuspiciousDomain\n| top 5 by QueryCount desc' },
+  { id: "ts3", name: "Challenge 3: Ransomware Execution", description: "Find the endpoint where vssadmin.exe was used to delete shadow copies.", tactic: "Impact", query: 'SecurityEvent\n| search "vssadmin"\n| project TimeGenerated, Computer, Account, Activity' },
+  { id: "ts4", name: "Challenge 4: Mimikatz Activity", description: "Identify the user account that ran reg.exe to dump the HKLM\\SYSTEM registry hive.", tactic: "CredentialAccess", query: 'SecurityEvent\n| search "reg.exe save hklm"\n| project-away EventID, IpAddress\n| extend IsMalicious = "Yes"' },
+];
+
 export function getRule(id: string): AnalyticRule | undefined {
   return SENTINEL_RULES.find((r) => r.id === id);
 }

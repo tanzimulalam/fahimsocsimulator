@@ -232,6 +232,31 @@ export function runKql(query: string, tables: KqlTables): KqlResult {
       } else if (lower === "count") {
         rows = [{ count_: rows.length }];
         columns = ["count_"];
+      } else if (lower.startsWith("extend ")) {
+        const body = seg.slice("extend ".length).trim();
+        const eqIdx = body.indexOf("=");
+        if (eqIdx > 0) {
+          const newCol = body.slice(0, eqIdx).trim();
+          const expr = body.slice(eqIdx + 1).trim();
+          if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
+             const val = stripQuotes(expr);
+             rows = rows.map(r => ({...r, [newCol]: val}));
+          } else if (!isNaN(Number(expr))) {
+             const val = Number(expr);
+             rows = rows.map(r => ({...r, [newCol]: val}));
+          } else {
+             rows = rows.map(r => ({...r, [newCol]: r[expr] ?? ""}));
+          }
+          if (!columns.includes(newCol)) columns.push(newCol);
+        }
+      } else if (lower.startsWith("project-away ")) {
+        const colsToRemove = seg.slice("project-away ".length).split(",").map((c) => c.trim()).filter(Boolean);
+        rows = rows.map((r) => {
+          const out = { ...r };
+          colsToRemove.forEach((c) => delete out[c]);
+          return out;
+        });
+        columns = columns.filter((c) => !colsToRemove.includes(c));
       } else {
         return { columns, rows: [], rowsScanned, error: `Unsupported operator: "${seg}"`, tableName };
       }
