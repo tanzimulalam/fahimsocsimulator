@@ -13,8 +13,7 @@ export type AmpBlocklistEntry = {
   ticketNumber?: string;
   status: "blocked" | "allowed";
 };
-
-export const AMP_BLOCKLIST_KEY = "amp-blocklist-v1";
+export const AMP_BLOCKLIST_KEY = "amp-blocklist-v2";
 
 function uid() {
   return `blk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

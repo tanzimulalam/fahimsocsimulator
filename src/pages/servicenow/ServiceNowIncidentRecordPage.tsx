@@ -210,6 +210,19 @@ export function ServiceNowIncidentRecordPage() {
         });
         addNotification("AMP Integration", "hubspot.com allowed — check AMP Outbreak Control block list.");
       }
+      if (updatedTicket.number === "INC0162945" && resolutionNotes.toLowerCase().includes("false positive")) {
+        logResponseAction({
+          incidentId: updatedTicket.number,
+          hostLine: "python.org",
+          source: "ServiceNow",
+          action: "block_url",
+          actor: authorName,
+          tool: "Cisco Secure Endpoint",
+          label: "python.org and pypi.org allowed (false positive)",
+          target: "python.org",
+        });
+        addNotification("AMP Integration", "python.org and pypi.org allowed — check AMP Outbreak Control block list.");
+      }
     }
 
     if (returnToList) {
@@ -612,7 +625,7 @@ export function ServiceNowIncidentRecordPage() {
                       {ampDomains.map((d) => (
                         <li key={d}>
                           <code>{d}</code> — {isBlocked(d, "domain") ? "Blocked in AMP" : "Not blocked"}
-                          {d === "hubspot.com" && hubspotBlocked && (
+                          {["hubspot.com", "github.com", "quickbooks.intuit.com", "python.org"].includes(d) && isBlocked(d, "domain") && (
                             <span className="sn-badge-warn"> (verify false positive in Outbreak Control)</span>
                           )}
                         </li>
