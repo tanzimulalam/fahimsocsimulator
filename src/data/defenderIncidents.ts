@@ -797,6 +797,53 @@ export const DEFENDER_INCIDENTS: DefenderIncidentRecord[] = [
     linkedXdrIncidentId: "INC-XDR-020",
     linkedSentinelIncidentId: "SENT-3012",
   },
+
+  // 13. Impossible travel — svc_backup service account
+  {
+    id: "DINC-0013",
+    displayId: 235613,
+    title: "Impossible travel sign-in for service account svc_backup",
+    severity: "High",
+    status: "Active",
+    classification: "Not set",
+    determination: "Not set",
+    assignedTo: null,
+    workloads: ["Identity"],
+    tactics: ["Initial Access", "Credential Access"],
+    techniques: ["T1078.004", "T1078.001"],
+    firstActivity: T("2026-05-28T07:31:00Z"),
+    lastActivity: T("2026-05-28T07:43:00Z"),
+    devices: [],
+    users: [{ upn: "svc_backup@datagroup.com", riskLevel: "High" }],
+    mailboxes: [],
+    fileEvidence: [],
+    ipEvidence: [
+      { ip: "45.84.68.22", verdict: "suspicious", role: "Sign-in source (Clifton Park NY)" },
+      { ip: "194.165.16.78", verdict: "malicious", role: "Sign-in source (Bucharest RO) — Tor exit node" },
+    ],
+    urlEvidence: [],
+    cves: [],
+    alerts: [
+      {
+        id: "DA-0023",
+        title: "Impossible travel detected for svc_backup",
+        severity: "High",
+        category: "InitialAccess",
+        mitreTechniques: ["T1078.004"],
+        detectionSource: "Microsoft Entra ID Protection",
+        serviceSource: "Identity",
+        entities: ["svc_backup@datagroup.com", "45.84.68.22", "194.165.16.78"],
+        firstActivity: T("2026-05-28T07:43:00Z"),
+        status: "New",
+        sentinelAnalyticRuleId: "AR-0004",
+      },
+    ],
+    attackStory: [
+      { step: 1, time: T("2026-05-28T07:31:00Z"), text: "svc_backup signed in from Clifton Park NY (45.84.68.22) — expected location.", workload: "Identity" },
+      { step: 2, time: T("2026-05-28T07:43:00Z"), text: "Same account signed in from Bucharest RO (194.165.16.78 — known Tor exit node) 12 minutes later. Physically impossible.", workload: "Identity" },
+    ],
+    linkedSentinelIncidentId: "SENT-3018",
+  },
 ];
 
 export function getDefenderIncident(id: string): DefenderIncidentRecord | undefined {

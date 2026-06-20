@@ -467,7 +467,7 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
     number: "INC0162845",
     openedAt: "2026-05-27 08:15:22 AM",
     shortDescription: "Multiple failed RDP logins for MdUsman, followed by successful login",
-    description: "Sentinel analytic rule SENT-3004 correlated 847 failed RDP attempts followed by a successful login from 194.165.16.78 to LAB-WS-0142. Investigate for account compromise.",
+    description: "Sentinel analytic rule SENT-3017 correlated 847 failed RDP attempts followed by a successful login from 185.220.101.47 to LAB-WS-0142. Investigate for account compromise.",
     caller: "Security Monitoring",
     email: "soc-alerts@datagroup.com",
     phone: "",
@@ -485,7 +485,7 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
     assignedTo: "",
     attachments: [],
     linkedXdrIncidentId: "INC-XDR-009",
-    linkedSentinelIncidentId: "SENT-3004",
+    linkedSentinelIncidentId: "SENT-3017",
     activities: [],
   },
   {
@@ -524,8 +524,8 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
   {
     number: "INC0162861",
     openedAt: "2026-05-28 07:45:00 AM",
-    shortDescription: "Sentinel incident SENT-3003 — impossible travel sign-in for svc_backup",
-    description: "Microsoft Sentinel correlated impossible travel: svc_backup authenticated from Clifton Park NY and Bucharest RO within 12 minutes. Review identity risk in Defender and disable account if confirmed compromise.",
+    shortDescription: "Sentinel incident SENT-3018 — impossible travel sign-in for svc_backup",
+    description: "Microsoft Sentinel correlated impossible travel: svc_backup authenticated from Clifton Park NY and Bucharest RO within 12 minutes. Review identity risk in Defender (DINC-0013) and disable account if confirmed compromise.",
     caller: "Security Monitoring",
     email: "soc-alerts@datagroup.com",
     phone: "",
@@ -542,8 +542,8 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
     assignmentGroup: "Security Operations Center",
     assignedTo: "System Administrator",
     attachments: [],
-    linkedSentinelIncidentId: "SENT-3003",
-    linkedDefenderIncidentId: "DINC-0005",
+    linkedSentinelIncidentId: "SENT-3018",
+    linkedDefenderIncidentId: "DINC-0013",
     activities: [
       {
         id: "act-16",
@@ -551,7 +551,7 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
         type: "work_note",
         authorName: "System Administrator",
         authorInitials: "SA",
-        text: "Opened Sentinel incident SENT-3003. Running KQL hunt for svc_backup sign-ins last 72h.",
+        text: "Opened Sentinel incident SENT-3018. Running KQL hunt for svc_backup sign-ins last 72h.",
       },
     ],
   },
@@ -577,7 +577,6 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
     assignedTo: "",
     attachments: [],
     ampBlocklist: { domains: ["secure-login.portal-update.net"] },
-    linkedDefenderIncidentId: "DINC-0001",
     activities: [],
   },
   {
@@ -629,7 +628,7 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
     attachments: [],
     linkedXdrIncidentId: "INC-XDR-004",
     linkedDefenderIncidentId: "DINC-0003",
-    linkedSentinelIncidentId: "SENT-3005",
+    linkedSentinelIncidentId: "SENT-3003",
     activities: [],
   },
   {
