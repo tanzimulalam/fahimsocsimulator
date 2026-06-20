@@ -73,7 +73,6 @@ export function ServiceNowIncidentRecordPage() {
     ...(ticket.ampPreBlockedDomains ?? []),
     ...(ticket.ampBlocklist?.domains ?? []),
   ];
-  const hubspotBlocked = ampDomains.includes("hubspot.com") && isBlocked("hubspot.com", "domain");
 
   const handleSave = (returnToList = false) => {
     // Check resolve conditions
