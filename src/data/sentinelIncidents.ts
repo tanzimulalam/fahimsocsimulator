@@ -333,6 +333,30 @@ export const SENTINEL_INCIDENTS: SentinelIncident[] = [
     closeClassification: "Not set",
     linkedXdrIncidentId: "INC-XDR-020",
   },
+  {
+    id: "SENT-3016",
+    displayId: 30016,
+    title: "Cobalt Strike C2 beacon from SOC-TRAINING-01 to 203.0.113.47",
+    severity: "High",
+    status: "New",
+    owner: null,
+    tactics: ["CommandAndControl", "Execution"],
+    techniques: ["T1071.001", "T1059.003"],
+    alertCount: 2,
+    entities: [
+      { type: "host", value: "SOC-TRAINING-01" },
+      { type: "ip", value: "203.0.113.47" },
+      { type: "account", value: "trainee.analyst" },
+      { type: "filehash", value: "c64cc0cb8a3793f77395ef02506b12a80f089602534f3fb036d0bd10d94f29ee" },
+    ],
+    productNames: ["Cisco Secure Endpoint", "CrowdStrike Falcon"],
+    analyticRuleId: "AR-0001",
+    created: T("2026-05-31T09:00:00Z"),
+    lastUpdated: T("2026-05-31T09:31:00Z"),
+    description: "Cisco Secure Endpoint and CrowdStrike Falcon both flagged named-pipe activity and HTTPS beaconing from SOC-TRAINING-01 to the known Cobalt Strike team server 203.0.113.47. Parent process: spoolsv.exe. Corroborate in XDR incident INC-XDR-011 and block the C2 IP in AMP.",
+    closeClassification: "Not set",
+    linkedXdrIncidentId: "INC-XDR-011",
+  },
 ];
 
 const SEV_ORDER: Record<SentinelSeverity, number> = { High: 0, Medium: 1, Low: 2, Informational: 3 };

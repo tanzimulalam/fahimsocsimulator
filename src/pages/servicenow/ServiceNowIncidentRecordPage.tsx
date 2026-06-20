@@ -183,7 +183,7 @@ export function ServiceNowIncidentRecordPage() {
 
     if (state === "Resolved" && ticket.state !== "Resolved") {
       applyTicketBlocklist(updatedTicket);
-      if (updatedTicket.ampBlocklist?.domains?.length || updatedTicket.importMsisacWeek) {
+      if (updatedTicket.ampBlocklist?.domains?.length || updatedTicket.ampBlocklist?.ips?.length || updatedTicket.ampBlocklist?.urls?.length || updatedTicket.ampBlocklist?.hashes?.length || updatedTicket.importMsisacWeek) {
         logResponseAction({
           incidentId: updatedTicket.number,
           hostLine: updatedTicket.configurationItem || updatedTicket.shortDescription.slice(0, 60),

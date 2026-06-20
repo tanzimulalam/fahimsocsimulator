@@ -316,7 +316,9 @@ securityEvent.push(
   { TimeGenerated: "2026-05-27T19:35:00Z", EventID: 4688, Account: "m.rodriguez", Computer: "FIN-EXEC-01", IpAddress: "10.4.12.55", Activity: "A new process has been created: @WanaDecryptor" },
   { TimeGenerated: "2026-05-27T19:36:00Z", EventID: 4688, Account: "m.rodriguez", Computer: "FIN-EXEC-01", IpAddress: "-", Activity: "vssadmin.exe delete shadows" },
   { TimeGenerated: "2026-05-28T09:12:00Z", EventID: 4688, Account: "dapqa", Computer: "POLC-MJ0LQLRR", IpAddress: "151.101.65.91", Activity: "reg.exe save hklm\\system" },
-  { TimeGenerated: "2026-05-28T09:15:00Z", EventID: 4688, Account: "dapqa", Computer: "POLC-MJ0LQLRR", IpAddress: "151.101.65.91", Activity: "mshta.exe spawned by explorer.exe" }
+  { TimeGenerated: "2026-05-28T09:15:00Z", EventID: 4688, Account: "dapqa", Computer: "POLC-MJ0LQLRR", IpAddress: "151.101.65.91", Activity: "mshta.exe spawned by explorer.exe" },
+  { TimeGenerated: "2026-05-31T09:00:00Z", EventID: 4688, Account: "trainee.analyst", Computer: "SOC-TRAINING-01", IpAddress: "203.0.113.47", Activity: "A new process has been created: spoolsv.exe (unusual child process — named pipe created)" },
+  { TimeGenerated: "2026-05-31T09:01:00Z", EventID: 4688, Account: "trainee.analyst", Computer: "SOC-TRAINING-01", IpAddress: "203.0.113.47", Activity: "A new process has been created: mojo.5688.8.pipe (Cobalt Strike named pipe pattern)" }
 );
 
 const signinLogs: KqlRow[] = [
@@ -338,12 +340,15 @@ const commonSecurityLog: KqlRow[] = [
   { TimeGenerated: "2026-05-27T19:40:00Z", DeviceVendor: "Palo Alto Networks", DeviceProduct: "IDS", SourceIP: "10.5.0.7", DestinationIP: "10.5.0.20", Activity: "EternalBlue SMB exploit attempt" },
   { TimeGenerated: "2026-05-28T11:40:00Z", DeviceVendor: "Palo Alto Networks", DeviceProduct: "Firewall", SourceIP: "10.8.0.3", DestinationIP: "203.0.113.47", Activity: "Allowed outbound 443" },
   { TimeGenerated: "2026-05-28T14:15:00Z", DeviceVendor: "Cisco", DeviceProduct: "Firepower", SourceIP: "10.109.0.61", DestinationIP: "8.8.8.8", Activity: "DNS Tunneling Pattern Detected" },
+  { TimeGenerated: "2026-05-31T09:01:00Z", DeviceVendor: "Cisco", DeviceProduct: "Firepower", SourceIP: "10.10.10.55", DestinationIP: "203.0.113.47", Activity: "Allowed outbound 443 — Cobalt Strike malleable C2 HTTPS pattern" },
 ];
 
 const deviceEventsSentinel: KqlRow[] = [
   { TimeGenerated: "2026-05-29T07:45:00Z", DeviceName: "DC01", ActionType: "ProcessCreated", ProcessCommandLine: "rundll32 comsvcs.dll MiniDump", RemoteUrl: "", RemoteIP: "" },
   { TimeGenerated: "2026-05-29T13:05:00Z", DeviceName: "HR-LAPTOP-04", ActionType: "ConnectionSuccess", ProcessCommandLine: "AsyncRAT.exe", RemoteUrl: "", RemoteIP: "185.234.218.116" },
   { TimeGenerated: "2026-05-27T19:32:00Z", DeviceName: "FIN-EXEC-01", ActionType: "FileCreated", ProcessCommandLine: "mssecsvc.exe", RemoteUrl: "", RemoteIP: "" },
+  { TimeGenerated: "2026-05-31T09:00:00Z", DeviceName: "SOC-TRAINING-01", ActionType: "ProcessCreated", ProcessCommandLine: "spoolsv.exe -> mojo.5688.8.pipe", RemoteUrl: "windowsupdate-cdn.azureedge.net", RemoteIP: "203.0.113.47" },
+  { TimeGenerated: "2026-05-31T09:01:00Z", DeviceName: "SOC-TRAINING-01", ActionType: "ConnectionSuccess", ProcessCommandLine: "beacon.dll (c64cc0cb)", RemoteUrl: "windowsupdate-cdn.azureedge.net", RemoteIP: "203.0.113.47" },
   ...Array.from({ length: 30 }, (_, i) => ({
     TimeGenerated: plusMin("2026-05-28T21:10:00Z", i * 5),
     DeviceName: "RND-WS-09",

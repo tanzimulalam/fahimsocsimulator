@@ -821,6 +821,8 @@ export const INITIAL_SERVICENOW_TICKETS: SnTicket[] = [
     assignedTo: "",
     attachments: [],
     linkedXdrIncidentId: "INC-XDR-011",
+    linkedSentinelIncidentId: "SENT-3016",
+    ampBlocklist: { ips: ["203.0.113.47"] },
     activities: [],
   },
   {
