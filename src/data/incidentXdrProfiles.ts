@@ -286,4 +286,53 @@ export const XDR_SIR_BY_INCIDENT_ID: Record<string, IncidentXdrSir> = {
     ttps: ["T1204.002 (benign user execution)"],
     relatedIntelNote: "Do not escalate — closed in change record CHG-44921.",
   },
+  "inc-21": {
+    sirId: "SIR0019201", sirTitle: "Data Exfiltration via Rclone", xdrTitle: "Suspicious Rclone Execution", xdrPriority: 850, xdrState: "New",
+    xdrTactics: ["Exfiltration"], xdrBlurb: "Rclone execution with unknown cloud provider.", msisacFeedId: "MS-ISAC-2025-021",
+    sectorContext: "Data exfiltration observed in peer networks.", firstSeenUtc: new Date().toISOString(), lastObservedUtc: new Date().toISOString(),
+    narrative: "Sales laptop initiated high volume transfer to anon-cloud-storage.com using rclone.",
+    maliciousIpv4: [], maliciousDomains: [], dnsQueriesSample: [], ttps: [], relatedIntelNote: "Review cloud storage destinations."
+  },
+  "inc-22": {
+    sirId: "SIR0019202", sirTitle: "macOS Cryptominer", xdrTitle: "XMRig Cryptominer", xdrPriority: 910, xdrState: "New",
+    xdrTactics: ["Execution"], xdrBlurb: "Cryptominer executing from /tmp on macOS.", msisacFeedId: "MS-ISAC-2025-022",
+    sectorContext: "Cryptominers targeting unpatched macOS devices.", firstSeenUtc: new Date().toISOString(), lastObservedUtc: new Date().toISOString(),
+    narrative: "High CPU usage linked to XMRig connecting to supportxmr.com.",
+    maliciousIpv4: [], maliciousDomains: [], dnsQueriesSample: [], ttps: [], relatedIntelNote: "Kill process and remove binary."
+  },
+  "inc-23": {
+    sirId: "SIR0019203", sirTitle: "Linux Web Shell", xdrTitle: "Web Shell Activity", xdrPriority: 880, xdrState: "In progress",
+    xdrTactics: ["Persistence"], xdrBlurb: "PHP web shell on internal dev server.", msisacFeedId: "MS-ISAC-2025-023",
+    sectorContext: "Exploitation of vulnerable web apps.", firstSeenUtc: new Date().toISOString(), lastObservedUtc: new Date().toISOString(),
+    narrative: "Reverse shell initiated from www-data user context.",
+    maliciousIpv4: [], maliciousDomains: [], dnsQueriesSample: [], ttps: [], relatedIntelNote: "Check access logs for initial compromise."
+  },
+  "inc-24": {
+    sirId: "SIR0019204", sirTitle: "Mimikatz Credential Dumping", xdrTitle: "Credential Dumping Attempt", xdrPriority: 950, xdrState: "New",
+    xdrTactics: ["Credential Access"], xdrBlurb: "LSASS memory access detected.", msisacFeedId: "MS-ISAC-2025-024",
+    sectorContext: "Common post-exploitation technique.", firstSeenUtc: new Date().toISOString(), lastObservedUtc: new Date().toISOString(),
+    narrative: "Mimikatz variant detected attempting to access LSASS.",
+    maliciousIpv4: [], maliciousDomains: [], dnsQueriesSample: [], ttps: [], relatedIntelNote: "Rotate passwords for affected users."
+  },
+  "inc-25": {
+    sirId: "SIR0019205", sirTitle: "LockBit Precursor", xdrTitle: "Ransomware Precursor", xdrPriority: 990, xdrState: "In progress",
+    xdrTactics: ["Lateral Movement"], xdrBlurb: "Cobalt strike beacon and network scanning.", msisacFeedId: "MS-ISAC-2025-025",
+    sectorContext: "LockBit affiliates active in sector.", firstSeenUtc: new Date().toISOString(), lastObservedUtc: new Date().toISOString(),
+    narrative: "Initial access followed by rapid lateral movement attempts.",
+    maliciousIpv4: [], maliciousDomains: [], dnsQueriesSample: [], ttps: [], relatedIntelNote: "Isolate host immediately."
+  },
+  "inc-26": {
+    sirId: "SIR0019206", sirTitle: "Malicious npm Package", xdrTitle: "Supply Chain Attack", xdrPriority: 750, xdrState: "New",
+    xdrTactics: ["Initial Access"], xdrBlurb: "Typosquatted npm package execution.", msisacFeedId: "MS-ISAC-2025-026",
+    sectorContext: "Dev environments targeted via typosquatting.", firstSeenUtc: new Date().toISOString(), lastObservedUtc: new Date().toISOString(),
+    narrative: "Developer inadvertently installed malicious package.",
+    maliciousIpv4: [], maliciousDomains: [], dnsQueriesSample: [], ttps: [], relatedIntelNote: "Review package.json and node_modules."
+  },
+  "inc-27": {
+    sirId: "SIR0019207", sirTitle: "Phishing to AnyDesk", xdrTitle: "AnyDesk Installation via Phishing", xdrPriority: 820, xdrState: "New",
+    xdrTactics: ["Command and Control"], xdrBlurb: "AnyDesk installed post-phishing.", msisacFeedId: "MS-ISAC-2025-027",
+    sectorContext: "RMM tools abused for persistent access.", firstSeenUtc: new Date().toISOString(), lastObservedUtc: new Date().toISOString(),
+    narrative: "Phishing email led to unauthorized RMM tool installation.",
+    maliciousIpv4: [], maliciousDomains: [], dnsQueriesSample: [], ttps: [], relatedIntelNote: "Uninstall AnyDesk and review phishing headers."
+  }
 };
