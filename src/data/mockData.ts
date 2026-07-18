@@ -1196,7 +1196,7 @@ export const INITIAL_INCIDENTS: Incident[] = [
   },
   {
     id: "inc-23",
-    status: "in_progress",
+    status: "requires_attention",
     hostLine: "DEV-LNX-01.datagroup.local",
     groupName: "Data Group — SOC Lab",
     eventCount: 2,
@@ -1238,7 +1238,7 @@ export const INITIAL_INCIDENTS: Incident[] = [
   },
   {
     id: "inc-25",
-    status: "in_progress",
+    status: "requires_attention",
     hostLine: "FIN-LAPTOP-02.corp.local",
     groupName: "Defender ATP Group FacStaff",
     eventCount: 6,
